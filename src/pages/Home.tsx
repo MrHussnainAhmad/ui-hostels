@@ -1,35 +1,403 @@
+// src/pages/Home.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useSEO } from '../hooks/useSEO';
 
+// ==================== ICONS ====================
+const BuildingIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const WifiIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+      d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+  </svg>
+);
+
+const LocationIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const StarIcon = ({ filled = true }: { filled?: boolean }) => (
+  <svg 
+    className={`w-5 h-5 ${filled ? 'text-amber-400' : 'text-slate-200'}`} 
+    fill="currentColor" 
+    viewBox="0 0 20 20"
+  >
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+  </svg>
+);
+
+const ArrowRightIcon = () => (
+  <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+// ==================== MAIN COMPONENT ====================
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
 
+  // SEO Configuration
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "LodgingBusiness",
+    "name": "HostelHub Bahawalpur",
+    "description": "Premium hostel accommodation and management services in Bahawalpur, Pakistan.",
+    "url": "https://hostelhub.pk",
+    "telephone": "+92-300-1234567",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "University Road",
+      "addressLocality": "Bahawalpur",
+      "addressRegion": "Punjab",
+      "postalCode": "63100",
+      "addressCountry": "PK"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "29.3956",
+      "longitude": "71.6836"
+    },
+    "priceRange": "PKR 5,000 - PKR 25,000",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "reviewCount": "520"
+    }
+  };
+
+  // Apply SEO
+  useSEO({
+    title: 'HostelHub Bahawalpur | Best Hostel Accommodation & Management in Pakistan',
+    description: 'Find premium hostel accommodation in Bahawalpur, Pakistan. Safe, affordable hostels near Islamia University, QMC & medical colleges. Book your room today!',
+    keywords: 'hostel in Bahawalpur, student hostel Pakistan, boys hostel Bahawalpur, girls hostel Bahawalpur, hostel near IUB, hostel management system, affordable accommodation Bahawalpur',
+    canonical: 'https://hostelhub.pk',
+    ogTitle: 'HostelHub Bahawalpur | Premium Hostel Accommodation',
+    ogDescription: 'Find safe & affordable hostel accommodation in Bahawalpur. Modern facilities, 24/7 security.',
+    schema: schemaData
+  });
+
+  // Data
+  const features = [
+    {
+      icon: <BuildingIcon />,
+      title: "Modern Facilities",
+      description: "Fully furnished rooms with AC, attached bathrooms & dedicated study areas"
+    },
+    {
+      icon: <ShieldIcon />,
+      title: "24/7 Security",
+      description: "CCTV surveillance, biometric access & round-the-clock security guards"
+    },
+    {
+      icon: <WifiIcon />,
+      title: "High-Speed WiFi",
+      description: "Unlimited fiber internet for seamless online learning & entertainment"
+    }
+  ];
+
+  const stats = [
+    { value: "50+", label: "Hostels Listed" },
+    { value: "2,500+", label: "Happy Residents" },
+    { value: "4.8", label: "Average Rating", hasStar: true },
+    { value: "24/7", label: "Support Available" }
+  ];
+
+  const testimonials = [
+    {
+      name: "Ahmed Hassan",
+      role: "IUB Student",
+      content: "Found the perfect hostel near Islamia University within minutes. The booking process was seamless and hassle-free!",
+      rating: 5,
+      avatar: "AH"
+    },
+    {
+      name: "Fatima Zahra",
+      role: "Medical Student",
+      content: "Safe, clean, and affordable. HostelHub made my accommodation search completely stress-free. Highly recommended!",
+      rating: 5,
+      avatar: "FZ"
+    }
+  ];
+
+  const areas = [
+    "University Road", "Model Town A", "Model Town B", "Satellite Town",
+    "Near IUB Campus", "Near QMC", "Chowk Bazaar", "Farid Gate",
+    "Bindra Road", "Al Jadeed Colony"
+  ];
+
   return (
-    <div className="text-center py-20">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        Welcome to HostelHub
-      </h1>
-      <p className="text-xl text-gray-600 mb-8">
-        Find your perfect hostel accommodation
-      </p>
-      {!isAuthenticated && (
-        <div className="space-x-4">
-          <Link
-            to="/register"
-            className="bg-indigo-600 text-white px-6 py-3 rounded-md text-lg hover:bg-indigo-700"
-          >
-            Get Started
-          </Link>
-          <Link
-            to="/hostels"
-            className="bg-gray-200 text-gray-800 px-6 py-3 rounded-md text-lg hover:bg-gray-300"
-          >
-            Browse Hostels
-          </Link>
+    <main className="min-h-screen bg-white antialiased">
+      
+      {/* ==================== HERO SECTION ==================== */}
+      <section className="relative overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30" />
+        <div className="absolute top-20 right-10 w-72 h-72 bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-slate-100/60 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="pt-16 pb-20 sm:pt-24 sm:pb-28 lg:pt-32 lg:pb-36">
+            
+            {/* Location Badge */}
+            <div className="flex justify-center mb-8 animate-fade-in">
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-full shadow-sm">
+                <LocationIcon />
+                <span className="text-sm font-medium text-slate-600">
+                  Serving Bahawalpur, Pakistan
+                </span>
+              </span>
+            </div>
+
+            {/* Main Content */}
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-[1.1]">
+                Find Your Perfect
+                <span className="block mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Hostel Accommodation
+                </span>
+              </h1>
+              
+              <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                Premium hostel management platform in Bahawalpur. 
+                Safe, modern, and affordable living spaces for students and professionals.
+              </p>
+
+              {/* CTA Buttons */}
+              {!isAuthenticated ? (
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link
+                    to="/register"
+                    className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-slate-900/10"
+                  >
+                    Get Started Free
+                    <ArrowRightIcon />
+                  </Link>
+                  <Link
+                    to="/hostels"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-slate-700 font-medium rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition-all duration-200"
+                  >
+                    Browse Hostels
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-10">
+                  <Link
+                    to="/dashboard"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-200"
+                  >
+                    Go to Dashboard
+                    <ArrowRightIcon />
+                  </Link>
+                </div>
+              )}
+
+              {/* Trust Indicators */}
+              <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-slate-500">
+                {["Verified Hostels", "Secure Booking", "24/7 Support"].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <CheckIcon />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </section>
+
+      {/* ==================== STATS SECTION ==================== */}
+      <section className="py-14 sm:py-16 bg-slate-50/70 border-y border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-3xl sm:text-4xl font-bold text-slate-900">
+                    {stat.value}
+                  </span>
+                  {stat.hasStar && <StarIcon />}
+                </div>
+                <p className="mt-2 text-sm text-slate-500 font-medium">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== FEATURES SECTION ==================== */}
+      <section className="py-20 lg:py-28" id="features">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-14 lg:mb-16">
+            <span className="inline-block text-sm font-semibold text-blue-600 tracking-wide uppercase mb-3">
+              Why Choose Us
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
+              Everything You Need for Comfortable Living
+            </h2>
+            <p className="mt-4 text-lg text-slate-600">
+              Modern amenities designed for students and working professionals in Bahawalpur
+            </p>
+          </div>
+
+          {/* Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {features.map((feature, index) => (
+              <article 
+                key={index}
+                className="group relative p-8 bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-300"
+              >
+                <div className="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-slate-900">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-slate-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== TESTIMONIALS SECTION ==================== */}
+      <section className="py-20 lg:py-28 bg-slate-50/50" id="testimonials">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-14 lg:mb-16">
+            <span className="inline-block text-sm font-semibold text-blue-600 tracking-wide uppercase mb-3">
+              Testimonials
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
+              Trusted by Students Across Bahawalpur
+            </h2>
+          </div>
+
+          {/* Grid */}
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+            {testimonials.map((testimonial, index) => (
+              <article 
+                key={index}
+                className="p-8 bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-shadow duration-300"
+              >
+                {/* Stars */}
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon key={i} filled={i < testimonial.rating} />
+                  ))}
+                </div>
+                
+                <blockquote className="mt-5 text-slate-700 leading-relaxed">
+                  "{testimonial.content}"
+                </blockquote>
+                
+                <div className="mt-6 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-blue-500/20">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900">{testimonial.name}</p>
+                    <p className="text-sm text-slate-500">{testimonial.role}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== CTA SECTION ==================== */}
+      <section className="py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden bg-slate-900 rounded-3xl p-10 sm:p-14 lg:p-20">
+            
+            {/* Decorations */}
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+                Ready to Find Your Ideal Hostel?
+              </h2>
+              <p className="mt-4 text-lg text-slate-300 leading-relaxed">
+                Join thousands of students who found their perfect accommodation through HostelHub in Bahawalpur.
+              </p>
+              
+              {!isAuthenticated && (
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link
+                    to="/register"
+                    className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 active:scale-[0.98] transition-all duration-200"
+                  >
+                    Start Your Search
+                    <ArrowRightIcon />
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 text-white font-medium rounded-xl border border-white/20 hover:bg-white/10 active:scale-[0.98] transition-all duration-200"
+                  >
+                    Contact Us
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== AREAS SECTION (Local SEO) ==================== */}
+      <section className="py-14 sm:py-16 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-6">
+              Serving Major Areas in Bahawalpur
+            </h2>
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              {areas.map((area, index) => (
+                <span 
+                  key={index}
+                  className="px-4 py-2 bg-slate-100/80 text-slate-600 text-sm rounded-full hover:bg-slate-200 transition-colors duration-200"
+                >
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
   );
 };
 
