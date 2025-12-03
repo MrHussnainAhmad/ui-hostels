@@ -2,6 +2,38 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usersApi, hostelsApi, verificationsApi, feesApi } from '../../lib/api';
 
+// Type for room configuration
+interface RoomTypeConfig {
+  type: 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM';
+  totalRooms: number;
+  availableRooms: number;
+  personsInRoom: number;
+  price: number;
+  fullRoomPriceDiscounted?: number | null;
+}
+
+const ROOM_TYPE_LABELS: Record<string, string> = {
+  SHARED: 'Shared',
+  PRIVATE: 'Private',
+  SHARED_FULLROOM: 'Full Room',
+};
+
+// Helper function to calculate room totals from roomTypes array
+const calculateRoomTotals = (hostel: any): { totalRooms: number; availableRooms: number } => {
+  const roomTypes: RoomTypeConfig[] = Array.isArray(hostel.roomTypes) ? hostel.roomTypes : [];
+  return {
+    totalRooms: roomTypes.reduce((sum, rt) => sum + (rt.totalRooms || 0), 0),
+    availableRooms: roomTypes.reduce((sum, rt) => sum + (rt.availableRooms || 0), 0),
+  };
+};
+
+// Helper to get room types display string
+const getRoomTypesDisplay = (hostel: any): string => {
+  const roomTypes: RoomTypeConfig[] = Array.isArray(hostel.roomTypes) ? hostel.roomTypes : [];
+  if (roomTypes.length === 0) return 'N/A';
+  return roomTypes.map(rt => `${ROOM_TYPE_LABELS[rt.type] || rt.type}: ${rt.availableRooms}/${rt.totalRooms}`).join(' • ');
+};
+
 const ManagerDashboard: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [hostels, setHostels] = useState<any[]>([]);
@@ -35,6 +67,20 @@ const ManagerDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calculate totals from all hostels
+  const calculateAllHostelsTotals = () => {
+    let totalRooms = 0;
+    let availableRooms = 0;
+    
+    hostels.forEach(hostel => {
+      const totals = calculateRoomTotals(hostel);
+      totalRooms += totals.totalRooms;
+      availableRooms += totals.availableRooms;
+    });
+    
+    return { totalRooms, availableRooms };
   };
 
   if (loading) {
@@ -92,6 +138,8 @@ const ManagerDashboard: React.FC = () => {
     );
   }
 
+  const { totalRooms, availableRooms } = calculateAllHostelsTotals();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -112,15 +160,11 @@ const ManagerDashboard: React.FC = () => {
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-gray-500 text-sm">Total Rooms</h3>
-          <p className="text-3xl font-bold">
-            {hostels.reduce((sum, h) => sum + h.totalRooms, 0)}
-          </p>
+          <p className="text-3xl font-bold">{totalRooms}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-gray-500 text-sm">Available Rooms</h3>
-          <p className="text-3xl font-bold">
-            {hostels.reduce((sum, h) => sum + h.availableRooms, 0)}
-          </p>
+          <p className="text-3xl font-bold">{availableRooms}</p>
         </div>
       </div>
 
@@ -173,48 +217,55 @@ const ManagerDashboard: React.FC = () => {
           <p className="text-gray-500">No hostels yet. Create your first hostel.</p>
         ) : (
           <div className="space-y-4">
-            {hostels.map((hostel) => (
-              <div
-                key={hostel.id}
-                className="border rounded-lg p-4 flex justify-between items-center"
-              >
-                <div>
-                  <h3 className="font-semibold">{hostel.hostelName}</h3>
-                  <p className="text-sm text-gray-600">
-                    {hostel.city} • {hostel.availableRooms}/{hostel.totalRooms} rooms
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Rating: {hostel.averageRating.toFixed(1)} ({hostel.reviewCount} reviews)
-                  </p>
+            {hostels.map((hostel) => {
+              const { totalRooms: hostelTotal, availableRooms: hostelAvailable } = calculateRoomTotals(hostel);
+              
+              return (
+                <div
+                  key={hostel.id}
+                  className="border rounded-lg p-4 flex justify-between items-center"
+                >
+                  <div>
+                    <h3 className="font-semibold">{hostel.hostelName}</h3>
+                    <p className="text-sm text-gray-600">
+                      {hostel.city} • {hostelAvailable}/{hostelTotal} rooms available
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {getRoomTypesDisplay(hostel)}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Rating: {(hostel.averageRating || 0).toFixed(1)} ({hostel.reviewCount || 0} reviews)
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Link
+                      to={`/manager/hostels/${hostel.id}/students`}
+                      className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 text-sm"
+                    >
+                      Students
+                    </Link>
+                    <Link
+                      to={`/manager/hostels/${hostel.id}/bookings`}
+                      className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm"
+                    >
+                      Bookings
+                    </Link>
+                    <Link
+                      to={`/manager/hostels/${hostel.id}/reservations`}
+                      className="bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600 text-sm"
+                    >
+                      Reservations
+                    </Link>
+                    <Link
+                      to={`/manager/hostels/${hostel.id}/edit`}
+                      className="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600 text-sm"
+                    >
+                      Edit
+                    </Link>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Link
-                    to={`/manager/hostels/${hostel.id}/students`}
-                    className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 text-sm"
-                  >
-                    Students
-                  </Link>
-                  <Link
-                    to={`/manager/hostels/${hostel.id}/bookings`}
-                    className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm"
-                  >
-                    Bookings
-                  </Link>
-                  <Link
-                    to={`/manager/hostels/${hostel.id}/reservations`}
-                    className="bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600 text-sm"
-                  >
-                    Reservations
-                  </Link>
-                  <Link
-                    to={`/manager/hostels/${hostel.id}/edit`}
-                    className="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600 text-sm"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

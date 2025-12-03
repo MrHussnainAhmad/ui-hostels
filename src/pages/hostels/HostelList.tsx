@@ -4,6 +4,22 @@ import { Link } from 'react-router-dom';
 import { hostelsApi } from '../../lib/api';
 import { useSEO } from '../../hooks/useSEO';
 
+// ==================== TYPES ====================
+interface RoomTypeConfig {
+  type: 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM';
+  totalRooms: number;
+  availableRooms: number;
+  personsInRoom: number;
+  price: number;
+  fullRoomPriceDiscounted?: number | null;
+}
+
+const ROOM_TYPE_LABELS: Record<string, string> = {
+  SHARED: 'Shared',
+  PRIVATE: 'Private',
+  SHARED_FULLROOM: 'Full Room',
+};
+
 // ==================== ICONS ====================
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,23 +158,32 @@ interface HostelCardProps {
 const HostelCard: React.FC<HostelCardProps> = ({ hostel, viewMode }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
-  const getPrice = () => {
-    if (hostel.hostelType === 'PRIVATE') return hostel.roomPrice;
-    if (hostel.hostelType === 'SHARED') return hostel.pricePerHeadShared;
-    return hostel.pricePerHeadFullRoom;
+  // Parse roomTypes from the hostel data
+  const roomTypes: RoomTypeConfig[] = Array.isArray(hostel.roomTypes) ? hostel.roomTypes : [];
+
+  // Calculate totals from roomTypes array
+  const totalRooms = roomTypes.reduce((sum, rt) => sum + (rt.totalRooms || 0), 0);
+  const availableRooms = roomTypes.reduce((sum, rt) => sum + (rt.availableRooms || 0), 0);
+
+  // Get the lowest price for display
+  const getLowestPrice = (): number => {
+    if (roomTypes.length === 0) return 0;
+    const prices = roomTypes.map(rt => rt.price || 0).filter(p => p > 0);
+    return prices.length > 0 ? Math.min(...prices) : 0;
   };
 
-  const getPriceLabel = () => {
-    return hostel.hostelType === 'PRIVATE' ? '/room' : '/person';
+  // Get price label based on room types
+  const getPriceLabel = (): string => {
+    if (roomTypes.length === 0) return '/month';
+    // If all rooms are private, show /room, otherwise /person
+    const allPrivate = roomTypes.every(rt => rt.type === 'PRIVATE');
+    return allPrivate ? '/room' : '/person';
   };
 
-  const getTypeLabel = () => {
-    switch (hostel.hostelType) {
-      case 'SHARED': return 'Shared Room';
-      case 'PRIVATE': return 'Private Room';
-      case 'SHARED_FULLROOM': return 'Full Room';
-      default: return hostel.hostelType;
-    }
+  // Get room type display string
+  const getRoomTypesDisplay = (): string => {
+    if (roomTypes.length === 0) return 'N/A';
+    return roomTypes.map(rt => ROOM_TYPE_LABELS[rt.type] || rt.type).join(', ');
   };
 
   if (viewMode === 'list') {
@@ -227,24 +252,24 @@ const HostelCard: React.FC<HostelCardProps> = ({ hostel, viewMode }) => {
             <div className="flex flex-wrap gap-2 mt-3">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-lg">
                 <HomeIcon />
-                {getTypeLabel()}
+                {getRoomTypesDisplay()}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-lg">
                 <UsersIcon />
-                {hostel.availableRooms || 0} rooms available
+                {availableRooms} rooms available
               </span>
             </div>
 
             {/* Amenities Preview */}
-            {hostel.amenities && hostel.amenities.length > 0 && (
+            {hostel.facilities?.customFacilities && hostel.facilities.customFacilities.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {hostel.amenities.slice(0, 4).map((amenity: string, i: number) => (
+                {hostel.facilities.customFacilities.slice(0, 4).map((amenity: string, i: number) => (
                   <span key={i} className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded">
                     {amenity}
                   </span>
                 ))}
-                {hostel.amenities.length > 4 && (
-                  <span className="text-xs text-slate-400">+{hostel.amenities.length - 4} more</span>
+                {hostel.facilities.customFacilities.length > 4 && (
+                  <span className="text-xs text-slate-400">+{hostel.facilities.customFacilities.length - 4} more</span>
                 )}
               </div>
             )}
@@ -254,7 +279,7 @@ const HostelCard: React.FC<HostelCardProps> = ({ hostel, viewMode }) => {
           <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
             <div>
               <span className="text-2xl font-bold text-slate-900">
-                Rs. {getPrice()?.toLocaleString()}
+                Rs. {getLowestPrice().toLocaleString()}
               </span>
               <span className="text-slate-500 text-sm">{getPriceLabel()}/month</span>
             </div>
@@ -314,7 +339,7 @@ const HostelCard: React.FC<HostelCardProps> = ({ hostel, viewMode }) => {
         <div className="absolute bottom-3 left-3">
           <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm">
             <span className="text-lg font-bold text-slate-900">
-              Rs. {getPrice()?.toLocaleString()}
+              Rs. {getLowestPrice().toLocaleString()}
             </span>
             <span className="text-slate-500 text-sm">{getPriceLabel()}</span>
           </div>
@@ -350,10 +375,10 @@ const HostelCard: React.FC<HostelCardProps> = ({ hostel, viewMode }) => {
         <div className="flex flex-wrap gap-2 mb-4">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-lg">
             <HomeIcon />
-            {getTypeLabel()}
+            {getRoomTypesDisplay()}
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-lg">
-            {hostel.availableRooms || 0}/{hostel.totalRooms || 0} rooms
+            {availableRooms}/{totalRooms} rooms
           </span>
         </div>
 
@@ -399,7 +424,7 @@ const HostelList: React.FC = () => {
   const [filters, setFilters] = useState({
     city: '',
     hostelFor: '',
-    hostelType: '',
+    roomType: '',
     minPrice: '',
     maxPrice: '',
   });
@@ -419,7 +444,9 @@ const HostelList: React.FC = () => {
       const params: any = {};
       if (filters.city) params.city = filters.city;
       if (filters.hostelFor) params.hostelFor = filters.hostelFor;
-      if (filters.hostelType) params.hostelType = filters.hostelType;
+      if (filters.roomType) params.roomType = filters.roomType;
+      if (filters.minPrice) params.minPrice = Number(filters.minPrice);
+      if (filters.maxPrice) params.maxPrice = Number(filters.maxPrice);
 
       const response = await hostelsApi.search(params);
       setHostels(response.data.data);
@@ -515,8 +542,8 @@ const HostelList: React.FC = () => {
                       Room Type
                     </label>
                     <select
-                      value={filters.hostelType}
-                      onChange={(e) => setFilters({ ...filters, hostelType: e.target.value })}
+                      value={filters.roomType}
+                      onChange={(e) => setFilters({ ...filters, roomType: e.target.value })}
                       className="w-full px-4 py-2.5 text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
                     >
                       <option value="">All Types</option>

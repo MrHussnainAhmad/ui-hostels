@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { bookingsApi } from '../../lib/api';
+import { bookingsApi, createFormData } from '../../lib/api';
+import ImageUpload from '../../components/ImageUpload';
 
 const HostelBookings: React.FC = () => {
   const { hostelId } = useParams<{ hostelId: string }>();
@@ -8,10 +9,10 @@ const HostelBookings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [refundData, setRefundData] = useState({
-    refundImage: '',
     refundDate: '',
     refundTime: '',
   });
+  const [refundImageFiles, setRefundImageFiles] = useState<File[]>([]);
   const [showRefundModal, setShowRefundModal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,21 +44,32 @@ const HostelBookings: React.FC = () => {
   };
 
   const handleDisapprove = async (bookingId: string) => {
-    if (!refundData.refundImage || !refundData.refundDate || !refundData.refundTime) {
-      alert('Please fill all refund details');
+    if (refundImageFiles.length === 0 || !refundData.refundDate || !refundData.refundTime) {
+      alert('Please fill all refund details and upload refund screenshot');
       return;
     }
     setProcessing(bookingId);
     try {
-      await bookingsApi.disapprove(bookingId, refundData);
+      const formDataToSend = createFormData(refundData, [
+        { fieldName: 'refundImage', files: refundImageFiles },
+      ]);
+
+      await bookingsApi.disapprove(bookingId, formDataToSend);
       setShowRefundModal(null);
-      setRefundData({ refundImage: '', refundDate: '', refundTime: '' });
+      setRefundData({ refundDate: '', refundTime: '' });
+      setRefundImageFiles([]);
       loadBookings();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to disapprove');
     } finally {
       setProcessing(null);
     }
+  };
+
+  const closeRefundModal = () => {
+    setShowRefundModal(null);
+    setRefundData({ refundDate: '', refundTime: '' });
+    setRefundImageFiles([]);
   };
 
   if (loading) {
@@ -74,19 +86,14 @@ const HostelBookings: React.FC = () => {
       {/* Refund Modal */}
       {showRefundModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Refund Details</h3>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Refund Screenshot URL</label>
-                <input
-                  type="url"
-                  value={refundData.refundImage}
-                  onChange={(e) => setRefundData({ ...refundData, refundImage: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="https://example.com/refund.jpg"
-                />
-              </div>
+              <ImageUpload
+                label="Refund Screenshot"
+                value={refundImageFiles}
+                onChange={setRefundImageFiles}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Refund Date</label>
@@ -109,7 +116,7 @@ const HostelBookings: React.FC = () => {
               </div>
               <div className="flex space-x-4">
                 <button
-                  onClick={() => setShowRefundModal(null)}
+                  onClick={closeRefundModal}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-md hover:bg-gray-300"
                 >
                   Cancel

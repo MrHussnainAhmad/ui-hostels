@@ -1,8 +1,29 @@
 // src/pages/Home.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useSEO } from '../hooks/useSEO';
+import { hostelsApi } from '../lib/api';
+
+// ==================== TYPES ====================
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  hostel: {
+    id: string;
+    hostelName: string;
+    city: string;
+  };
+  student: {
+    id: string;
+    name?: string;
+    user: {
+      email: string;
+    };
+  };
+}
 
 // ==================== ICONS ====================
 const BuildingIcon = () => (
@@ -57,9 +78,146 @@ const CheckIcon = () => (
   </svg>
 );
 
+const QuoteIcon = () => (
+  <svg className="w-8 h-8 text-slate-200" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+  </svg>
+);
+
+const SpinnerIcon = () => (
+  <svg className="w-6 h-6 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+// ==================== REVIEW CARD COMPONENT ====================
+const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
+  const getInitials = () => {
+    if (review.student?.name) {
+      return review.student.name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return review.student?.user?.email?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const getDisplayName = () => {
+    if (review.student?.name) {
+      return review.student.name;
+    }
+    // Anonymize email: show first 3 chars + ***
+    const email = review.student?.user?.email || 'Anonymous';
+    return email.slice(0, 3) + '***';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <article className="relative p-6 sm:p-8 bg-white rounded-2xl border border-slate-100 hover:shadow-lg hover:border-slate-200 transition-all duration-300">
+      {/* Quote Icon */}
+      <div className="absolute top-6 right-6">
+        <QuoteIcon />
+      </div>
+
+      {/* Stars */}
+      <div className="flex gap-0.5 mb-4">
+        {[...Array(5)].map((_, i) => (
+          <StarIcon key={i} filled={i < review.rating} />
+        ))}
+      </div>
+
+      {/* Comment */}
+      <blockquote className="text-slate-700 leading-relaxed mb-6 line-clamp-4">
+        "{review.comment}"
+      </blockquote>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-blue-500/20">
+            {getInitials()}
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900 text-sm">{getDisplayName()}</p>
+            <p className="text-xs text-slate-500">{formatDate(review.createdAt)}</p>
+          </div>
+        </div>
+
+        {/* Hostel Link */}
+        <Link
+          to={`/hostels/${review.hostel.id}`}
+          className="text-xs text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 max-w-[120px] truncate"
+          title={review.hostel.hostelName}
+        >
+          <BuildingIcon />
+          <span className="truncate">{review.hostel.hostelName}</span>
+        </Link>
+      </div>
+    </article>
+  );
+};
+
+// ==================== REVIEWS SKELETON ====================
+const ReviewsSkeleton = () => (
+  <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
+    {[...Array(4)].map((_, i) => (
+      <div key={i} className="p-6 sm:p-8 bg-white rounded-2xl border border-slate-100 animate-pulse">
+        <div className="flex gap-1 mb-4">
+          {[...Array(5)].map((_, j) => (
+            <div key={j} className="w-5 h-5 bg-slate-200 rounded" />
+          ))}
+        </div>
+        <div className="space-y-2 mb-6">
+          <div className="h-4 bg-slate-200 rounded w-full" />
+          <div className="h-4 bg-slate-200 rounded w-5/6" />
+          <div className="h-4 bg-slate-200 rounded w-4/6" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-slate-200 rounded-full" />
+          <div className="space-y-1">
+            <div className="h-4 bg-slate-200 rounded w-24" />
+            <div className="h-3 bg-slate-200 rounded w-16" />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 // ==================== MAIN COMPONENT ====================
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  // Fetch random reviews on mount
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewsError(null);
+        const response = await hostelsApi.getRandomReviews(4);
+        setReviews(response.data.data);
+      } catch (error: any) {
+        console.error('Error fetching reviews:', error);
+        setReviewsError('Failed to load reviews');
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
 
   // SEO Configuration
   const schemaData = {
@@ -125,23 +283,6 @@ const Home: React.FC = () => {
     { value: "2,500+", label: "Happy Residents" },
     { value: "4.8", label: "Average Rating", hasStar: true },
     { value: "24/7", label: "Support Available" }
-  ];
-
-  const testimonials = [
-    {
-      name: "Ahmed Hassan",
-      role: "IUB Student",
-      content: "Found the perfect hostel near Islamia University within minutes. The booking process was seamless and hassle-free!",
-      rating: 5,
-      avatar: "AH"
-    },
-    {
-      name: "Fatima Zahra",
-      role: "Medical Student",
-      content: "Safe, clean, and affordable. HostelHub made my accommodation search completely stress-free. Highly recommended!",
-      rating: 5,
-      avatar: "FZ"
-    }
   ];
 
   const areas = [
@@ -290,50 +431,58 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ==================== TESTIMONIALS SECTION ==================== */}
-      <section className="py-20 lg:py-28 bg-slate-50/50" id="testimonials">
+      {/* ==================== REVIEWS SECTION ==================== */}
+      <section className="py-20 lg:py-28 bg-slate-50/50" id="reviews">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-14 lg:mb-16">
             <span className="inline-block text-sm font-semibold text-blue-600 tracking-wide uppercase mb-3">
-              Testimonials
+              Real Feedback
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
-              Trusted by Students Across Bahawalpur
+              What Students Say About Our Hostels
             </h2>
+            <p className="mt-4 text-lg text-slate-600">
+              Genuine reviews from students living in hostels across Bahawalpur
+            </p>
           </div>
 
-          {/* Grid */}
-          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <article 
-                key={index}
-                className="p-8 bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-shadow duration-300"
+          {/* Reviews Grid */}
+          {reviewsLoading ? (
+            <ReviewsSkeleton />
+          ) : reviewsError ? (
+            <div className="text-center py-12">
+              <p className="text-slate-500">{reviewsError}</p>
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <StarIcon filled={false} />
+              </div>
+              <p className="text-slate-500 text-lg">No reviews yet</p>
+              <p className="text-slate-400 text-sm mt-1">Be the first to review a hostel!</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
+              {reviews.map((review) => (
+                <ReviewCard key={review.id} review={review} />
+              ))}
+            </div>
+          )}
+
+          {/* View All Link */}
+          {reviews.length > 0 && (
+            <div className="text-center mt-10">
+              <Link
+                to="/hostels"
+                className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
               >
-                {/* Stars */}
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} filled={i < testimonial.rating} />
-                  ))}
-                </div>
-                
-                <blockquote className="mt-5 text-slate-700 leading-relaxed">
-                  "{testimonial.content}"
-                </blockquote>
-                
-                <div className="mt-6 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-blue-500/20">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">{testimonial.name}</p>
-                    <p className="text-sm text-slate-500">{testimonial.role}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                Explore all hostels
+                <ArrowRightIcon />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

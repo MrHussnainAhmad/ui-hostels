@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { verificationsApi } from '../../lib/api';
+import { verificationsApi, createFormData } from '../../lib/api';
+import ImageUpload from '../../components/ImageUpload';
 
 const SubmitVerification: React.FC = () => {
+  const [buildingImageFiles, setBuildingImageFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     initialHostelNames: [''],
     ownerName: '',
     city: '',
     address: '',
-    buildingImages: [''],
     hostelFor: 'BOYS' as 'BOYS' | 'GIRLS',
     easypaisaNumber: '',
     jazzcashNumber: '',
@@ -55,16 +56,26 @@ const SubmitVerification: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (buildingImageFiles.length === 0) {
+      setError('Please upload at least one building image');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const payload = {
         ...formData,
         initialHostelNames: formData.initialHostelNames.filter(n => n.trim()),
-        buildingImages: formData.buildingImages.filter(n => n.trim()),
         customBanks: formData.customBanks.filter(b => b.bankName && b.accountNumber),
       };
-      await verificationsApi.submit(payload);
+
+      const formDataToSend = createFormData(payload, [
+        { fieldName: 'buildingImages', files: buildingImageFiles },
+      ]);
+
+      await verificationsApi.submit(formDataToSend);
       navigate('/manager');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Submission failed');
@@ -164,28 +175,14 @@ const SubmitVerification: React.FC = () => {
             </button>
           </div>
 
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Building Images (URLs)
-            </label>
-            {formData.buildingImages.map((img, idx) => (
-              <input
-                key={idx}
-                type="url"
-                value={img}
-                onChange={(e) => handleArrayChange('buildingImages', idx, e.target.value)}
-                className="w-full px-3 py-2 border rounded-md mb-2"
-                placeholder="https://example.com/image.jpg"
-              />
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem('buildingImages')}
-              className="text-indigo-600 text-sm"
-            >
-              + Add Another Image
-            </button>
-          </div>
+          {/* Building Images - Updated to use ImageUpload */}
+          <ImageUpload
+            label="Building Images (Max 5)"
+            multiple
+            maxFiles={5}
+            value={buildingImageFiles}
+            onChange={setBuildingImageFiles}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

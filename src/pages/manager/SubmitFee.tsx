@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { feesApi } from '../../lib/api';
+import { feesApi, createFormData } from '../../lib/api';
+import ImageUpload from '../../components/ImageUpload';
 
 const SubmitFee: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -8,13 +9,13 @@ const SubmitFee: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentProofFiles, setPaymentProofFiles] = useState<File[]>([]);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const [formData, setFormData] = useState({
     hostelId,
     month: currentMonth,
-    paymentProofImage: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,10 +25,20 @@ const SubmitFee: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (paymentProofFiles.length === 0) {
+      setError('Please upload payment proof image');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await feesApi.submit(formData);
+      const formDataToSend = createFormData(formData, [
+        { fieldName: 'paymentProofImage', files: paymentProofFiles },
+      ]);
+
+      await feesApi.submit(formDataToSend);
       alert('Fee submitted successfully!');
       navigate('/manager');
     } catch (err: any) {
@@ -57,18 +68,11 @@ const SubmitFee: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Payment Proof (URL)</label>
-            <input
-              type="url"
-              name="paymentProofImage"
-              value={formData.paymentProofImage}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="https://example.com/payment-proof.jpg"
-              required
-            />
-          </div>
+          <ImageUpload
+            label="Payment Proof"
+            value={paymentProofFiles}
+            onChange={setPaymentProofFiles}
+          />
 
           <div className="bg-blue-50 p-4 rounded-md">
             <p className="text-sm text-blue-800">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { hostelsApi, bookingsApi } from '../../lib/api';
+import { hostelsApi, bookingsApi, createFormData } from '../../lib/api';
+import ImageUpload from '../../components/ImageUpload';
 
 const BookHostel: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -8,10 +9,11 @@ const BookHostel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [transactionImageFiles, setTransactionImageFiles] = useState<File[]>([]);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    transactionImage: '',
+    roomType: '',
     transactionDate: '',
     transactionTime: '',
     fromAccount: '',
@@ -26,6 +28,9 @@ const BookHostel: React.FC = () => {
     try {
       const response = await hostelsApi.getById(id!);
       setHostel(response.data.data);
+      if (response.data.data?.roomTypes?.length > 0) {
+        setFormData((prev) => ({ ...prev, roomType: response.data.data.roomTypes[0].type }));
+      }
     } catch (error) {
       console.error('Error loading hostel:', error);
     } finally {
@@ -33,20 +38,33 @@ const BookHostel: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!formData.roomType) {
+      setError('Please select a room type');
+      return;
+    }
+
+    if (transactionImageFiles.length === 0) {
+      setError('Please upload transaction screenshot');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await bookingsApi.create({
-        hostelId: id,
-        ...formData,
-      });
+      const formDataToSend = createFormData(
+        { hostelId: id, ...formData },
+        [{ fieldName: 'transactionImage', files: transactionImageFiles }]
+      );
+
+      await bookingsApi.create(formDataToSend);
       alert('Booking submitted successfully! Wait for manager approval.');
       navigate('/student');
     } catch (err: any) {
@@ -57,10 +75,9 @@ const BookHostel: React.FC = () => {
   };
 
   const getPrice = () => {
-    if (!hostel) return 0;
-    if (hostel.hostelType === 'PRIVATE') return hostel.roomPrice;
-    if (hostel.hostelType === 'SHARED') return hostel.pricePerHeadShared;
-    return hostel.pricePerHeadFullRoom;
+    if (!hostel || !formData.roomType) return 0;
+    const selectedRoomType = hostel.roomTypes.find((rt: any) => rt.type === formData.roomType);
+    return selectedRoomType ? selectedRoomType.price : 0;
   };
 
   if (loading) {
@@ -93,18 +110,28 @@ const BookHostel: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              Transaction Screenshot URL
+              Room Type
             </label>
-            <input
-              type="url"
-              name="transactionImage"
-              value={formData.transactionImage}
+            <select
+              name="roomType"
+              value={formData.roomType}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="https://example.com/screenshot.jpg"
               required
-            />
+            >
+              {hostel.roomTypes && hostel.roomTypes.map((rt: any) => (
+                <option key={rt.type} value={rt.type}>
+                  {rt.type} - Rs. {rt.price}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <ImageUpload
+            label="Transaction Screenshot"
+            value={transactionImageFiles}
+            onChange={setTransactionImageFiles}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

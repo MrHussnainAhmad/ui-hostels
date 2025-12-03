@@ -5,6 +5,22 @@ import { hostelsApi, reservationsApi, chatApi } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useSEO } from '../../hooks/useSEO';
 
+// ==================== TYPES ====================
+interface RoomTypeConfig {
+  type: 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM';
+  totalRooms: number;
+  availableRooms: number;
+  personsInRoom: number;
+  price: number;
+  fullRoomPriceDiscounted?: number | null;
+}
+
+const ROOM_TYPE_LABELS: Record<string, string> = {
+  SHARED: 'Shared Room',
+  PRIVATE: 'Private Room',
+  SHARED_FULLROOM: 'Full Room Share',
+};
+
 // ==================== ICONS ====================
 const MapPinIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,12 +73,6 @@ const CloseIcon = () => (
 const ChatIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
@@ -175,41 +185,23 @@ const ImageGallery: React.FC<{ images: string[]; hostelName: string }> = ({ imag
 
   return (
     <>
-      {/* Main Gallery */}
       <div className="grid grid-cols-4 gap-2 h-[400px] lg:h-[500px]">
-        {/* Main Image */}
         <div 
           className="col-span-4 lg:col-span-2 lg:row-span-2 relative rounded-l-2xl overflow-hidden cursor-pointer group"
           onClick={() => setShowLightbox(true)}
         >
-          <img
-            src={images[0]}
-            alt={hostelName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <img src={images[0]} alt={hostelName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
         </div>
 
-        {/* Side Images */}
         {images.slice(1, 5).map((img, idx) => (
           <div
             key={idx}
-            className={`hidden lg:block relative overflow-hidden cursor-pointer group ${
-              idx === 1 ? 'rounded-tr-2xl' : ''
-            } ${idx === 3 ? 'rounded-br-2xl' : ''}`}
-            onClick={() => {
-              setCurrentIndex(idx + 1);
-              setShowLightbox(true);
-            }}
+            className={`hidden lg:block relative overflow-hidden cursor-pointer group ${idx === 1 ? 'rounded-tr-2xl' : ''} ${idx === 3 ? 'rounded-br-2xl' : ''}`}
+            onClick={() => { setCurrentIndex(idx + 1); setShowLightbox(true); }}
           >
-            <img
-              src={img}
-              alt={`${hostelName} - ${idx + 2}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
+            <img src={img} alt={`${hostelName} - ${idx + 2}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-            
-            {/* Show More Overlay */}
             {idx === 3 && images.length > 5 && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <div className="text-center text-white">
@@ -221,7 +213,6 @@ const ImageGallery: React.FC<{ images: string[]; hostelName: string }> = ({ imag
           </div>
         ))}
 
-        {/* Mobile Show All Button */}
         <button
           onClick={() => setShowLightbox(true)}
           className="lg:hidden absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg text-sm font-medium text-slate-700"
@@ -231,52 +222,27 @@ const ImageGallery: React.FC<{ images: string[]; hostelName: string }> = ({ imag
         </button>
       </div>
 
-      {/* Lightbox */}
       {showLightbox && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
-          {/* Close Button */}
-          <button
-            onClick={() => setShowLightbox(false)}
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          >
+          <button onClick={() => setShowLightbox(false)} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors">
             <CloseIcon />
           </button>
-
-          {/* Counter */}
           <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-white text-sm">
             {currentIndex + 1} / {images.length}
           </div>
-
-          {/* Navigation */}
-          <button
-            onClick={prev}
-            className="absolute left-4 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          >
+          <button onClick={prev} className="absolute left-4 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors">
             <ChevronLeftIcon />
           </button>
-          <button
-            onClick={next}
-            className="absolute right-4 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          >
+          <button onClick={next} className="absolute right-4 p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors">
             <ChevronRightIcon />
           </button>
-
-          {/* Image */}
-          <img
-            src={images[currentIndex]}
-            alt={`${hostelName} - ${currentIndex + 1}`}
-            className="max-w-full max-h-[85vh] object-contain"
-          />
-
-          {/* Thumbnails */}
+          <img src={images[currentIndex]} alt={`${hostelName} - ${currentIndex + 1}`} className="max-w-full max-h-[85vh] object-contain" />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
             {images.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                  currentIndex === idx ? 'border-white' : 'border-transparent opacity-50 hover:opacity-75'
-                }`}
+                className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${currentIndex === idx ? 'border-white' : 'border-transparent opacity-50 hover:opacity-75'}`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
               </button>
@@ -289,23 +255,80 @@ const ImageGallery: React.FC<{ images: string[]; hostelName: string }> = ({ imag
 };
 
 // ==================== FACILITY ITEM ====================
-const FacilityItem: React.FC<{ 
-  icon: React.ReactNode; 
-  label: string; 
-  available: boolean;
-}> = ({ icon, label, available }) => (
-  <div className={`flex items-center gap-3 p-3 rounded-xl ${
-    available ? 'bg-emerald-50' : 'bg-slate-50'
-  }`}>
-    <div className={available ? 'text-emerald-600' : 'text-slate-400'}>
-      {icon}
-    </div>
-    <span className={`text-sm font-medium ${available ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
-      {label}
-    </span>
+const FacilityItem: React.FC<{ icon: React.ReactNode; label: string; available: boolean }> = ({ icon, label, available }) => (
+  <div className={`flex items-center gap-3 p-3 rounded-xl ${available ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+    <div className={available ? 'text-emerald-600' : 'text-slate-400'}>{icon}</div>
+    <span className={`text-sm font-medium ${available ? 'text-slate-700' : 'text-slate-400 line-through'}`}>{label}</span>
     {available ? <CheckIcon /> : <XMarkIcon />}
   </div>
 );
+
+// ==================== ROOM TYPE CARD ====================
+const RoomTypeCard: React.FC<{
+  roomType: RoomTypeConfig;
+  isSelected: boolean;
+  onSelect: () => void;
+}> = ({ roomType, isSelected, onSelect }) => {
+  const getPriceLabel = () => {
+    return roomType.type === 'PRIVATE' ? '/room' : '/person';
+  };
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+        isSelected
+          ? 'border-indigo-600 bg-indigo-50'
+          : 'border-slate-200 hover:border-slate-300 bg-white'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+          roomType.type === 'PRIVATE' ? 'bg-purple-100 text-purple-700' :
+          roomType.type === 'SHARED' ? 'bg-blue-100 text-blue-700' :
+          'bg-green-100 text-green-700'
+        }`}>
+          {ROOM_TYPE_LABELS[roomType.type]}
+        </span>
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+          isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+        }`}>
+          {isSelected && (
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl font-bold text-slate-900">Rs. {roomType.price.toLocaleString()}</span>
+        <span className="text-slate-500 text-sm">{getPriceLabel()}/month</span>
+      </div>
+
+      <div className="flex items-center gap-4 text-sm text-slate-600">
+        <div className="flex items-center gap-1">
+          <UsersIcon />
+          <span>{roomType.personsInRoom} persons</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <HomeIcon />
+          <span>{roomType.availableRooms}/{roomType.totalRooms} available</span>
+        </div>
+      </div>
+
+      {roomType.type === 'SHARED_FULLROOM' && roomType.fullRoomPriceDiscounted && (
+        <p className="text-xs text-emerald-600 mt-2">
+          💰 Full room discount: Rs. {roomType.fullRoomPriceDiscounted.toLocaleString()}
+        </p>
+      )}
+
+      {roomType.availableRooms === 0 && (
+        <p className="text-xs text-red-500 mt-2 font-medium">No rooms available</p>
+      )}
+    </div>
+  );
+};
 
 // ==================== REVIEW CARD ====================
 const ReviewCard: React.FC<{ review: any }> = ({ review }) => {
@@ -321,17 +344,10 @@ const ReviewCard: React.FC<{ review: any }> = ({ review }) => {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="font-medium text-slate-900">{review.user?.name || 'Anonymous'}</p>
-              <p className="text-sm text-slate-500">
-                {new Date(review.createdAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </p>
+              <p className="text-sm text-slate-500">{new Date(review.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
             </div>
             <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <StarIcon key={i} filled={i < review.rating} />
-              ))}
+              {[...Array(5)].map((_, i) => (<StarIcon key={i} filled={i < review.rating} />))}
             </div>
           </div>
           <p className="text-slate-600 leading-relaxed">{review.comment}</p>
@@ -365,6 +381,7 @@ const HostelDetail: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showReserveModal, setShowReserveModal] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
@@ -381,6 +398,12 @@ const HostelDetail: React.FC = () => {
     try {
       const response = await hostelsApi.getById(id!);
       setHostel(response.data.data);
+      // Select first available room type by default
+      const roomTypes = response.data.data.roomTypes as RoomTypeConfig[];
+      const availableType = roomTypes.find(rt => rt.availableRooms > 0);
+      if (availableType) {
+        setSelectedRoomType(availableType.type);
+      }
     } catch (error) {
       console.error('Error loading hostel:', error);
     } finally {
@@ -394,9 +417,14 @@ const HostelDetail: React.FC = () => {
       return;
     }
 
+    if (!selectedRoomType) {
+      alert('Please select a room type');
+      return;
+    }
+
     setReserving(true);
     try {
-      await reservationsApi.create({ hostelId: id, message });
+      await reservationsApi.create({ hostelId: id, roomType: selectedRoomType, message });
       setShowReserveModal(false);
       navigate('/student');
     } catch (err: any) {
@@ -411,7 +439,11 @@ const HostelDetail: React.FC = () => {
       navigate('/login');
       return;
     }
-    navigate(`/hostels/${id}/book`);
+    if (!selectedRoomType) {
+      alert('Please select a room type');
+      return;
+    }
+    navigate(`/hostels/${id}/book?roomType=${selectedRoomType}`);
   };
 
   const handleChat = async () => {
@@ -461,10 +493,7 @@ const HostelDetail: React.FC = () => {
           <BuildingIcon />
           <h2 className="text-2xl font-bold text-slate-900 mt-4 mb-2">Hostel Not Found</h2>
           <p className="text-slate-500 mb-6">The hostel you're looking for doesn't exist or has been removed.</p>
-          <Link
-            to="/hostels"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors"
-          >
+          <Link to="/hostels" className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors">
             <ChevronLeftIcon />
             Back to Hostels
           </Link>
@@ -473,29 +502,15 @@ const HostelDetail: React.FC = () => {
     );
   }
 
-  const getPrice = () => {
-    if (hostel.hostelType === 'PRIVATE') return hostel.roomPrice;
-    if (hostel.hostelType === 'SHARED') return hostel.pricePerHeadShared;
-    return hostel.pricePerHeadFullRoom;
-  };
-
-  const getPriceLabel = () => {
-    return hostel.hostelType === 'PRIVATE' ? '/room' : '/person';
-  };
-
-  const getTypeLabel = () => {
-    switch (hostel.hostelType) {
-      case 'SHARED': return 'Shared Room';
-      case 'PRIVATE': return 'Private Room';
-      case 'SHARED_FULLROOM': return 'Full Room Share';
-      default: return hostel.hostelType;
-    }
-  };
+  const roomTypes = hostel.roomTypes as RoomTypeConfig[];
+  const selectedRoom = roomTypes.find(rt => rt.type === selectedRoomType);
+  const totalAvailable = roomTypes.reduce((sum, rt) => sum + rt.availableRooms, 0);
+  const hasAvailableRooms = totalAvailable > 0;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        {/* ==================== BREADCRUMB ==================== */}
+        {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm mb-6">
           <Link to="/" className="text-slate-500 hover:text-slate-700 transition-colors">Home</Link>
           <span className="text-slate-400">/</span>
@@ -504,21 +519,19 @@ const HostelDetail: React.FC = () => {
           <span className="text-slate-900 font-medium">{hostel.hostelName}</span>
         </nav>
 
-        {/* ==================== IMAGE GALLERY ==================== */}
+        {/* Image Gallery */}
         <ImageGallery images={hostel.roomImages} hostelName={hostel.hostelName} />
 
-        {/* ==================== MAIN CONTENT ==================== */}
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          {/* Left Column - Details */}
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Header */}
             <div>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">
-                      {hostel.hostelName}
-                    </h1>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{hostel.hostelName}</h1>
                     {hostel.isVerified && <VerifiedIcon />}
                   </div>
                   <div className="flex items-center gap-2 text-slate-600">
@@ -527,16 +540,10 @@ const HostelDetail: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                  >
+                  <button onClick={() => setIsWishlisted(!isWishlisted)} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <HeartIcon filled={isWishlisted} />
                   </button>
-                  <button
-                    onClick={handleShare}
-                    className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                  >
+                  <button onClick={handleShare} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <ShareIcon />
                   </button>
                 </div>
@@ -549,47 +556,29 @@ const HostelDetail: React.FC = () => {
                   <span className="font-semibold text-slate-900">{hostel.averageRating?.toFixed(1) || '0.0'}</span>
                   <span className="text-slate-500">({hostel.reviewCount || 0} reviews)</span>
                 </div>
-                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                  hostel.hostelFor === 'BOYS' 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-pink-100 text-pink-700'
-                }`}>
+                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${hostel.hostelFor === 'BOYS' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
                   {hostel.hostelFor === 'BOYS' ? '👨 Boys Only' : '👩 Girls Only'}
                 </span>
                 <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold">
-                  {hostel.availableRooms} rooms available
+                  {totalAvailable} total spots available
                 </span>
               </div>
             </div>
 
-            {/* Description Divider */}
             <div className="h-px bg-slate-200" />
 
-            {/* Key Details */}
+            {/* Room Types Section */}
             <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-4">About this hostel</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-white border border-slate-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-slate-500 mb-1">
-                    <HomeIcon />
-                    <span className="text-sm">Room Type</span>
-                  </div>
-                  <p className="font-semibold text-slate-900">{getTypeLabel()}</p>
-                </div>
-                <div className="p-4 bg-white border border-slate-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-slate-500 mb-1">
-                    <UsersIcon />
-                    <span className="text-sm">Persons/Room</span>
-                  </div>
-                  <p className="font-semibold text-slate-900">{hostel.personsInRoom} persons</p>
-                </div>
-                <div className="p-4 bg-white border border-slate-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-slate-500 mb-1">
-                    <CalendarIcon />
-                    <span className="text-sm">Total Rooms</span>
-                  </div>
-                  <p className="font-semibold text-slate-900">{hostel.totalRooms} rooms</p>
-                </div>
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">Available Room Types</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {roomTypes.map((rt) => (
+                  <RoomTypeCard
+                    key={rt.type}
+                    roomType={rt}
+                    isSelected={selectedRoomType === rt.type}
+                    onSelect={() => rt.availableRooms > 0 && setSelectedRoomType(rt.type)}
+                  />
+                ))}
               </div>
             </div>
 
@@ -599,10 +588,7 @@ const HostelDetail: React.FC = () => {
                 <h2 className="text-xl font-semibold text-slate-900 mb-4">Nearby Locations</h2>
                 <div className="flex flex-wrap gap-2">
                   {hostel.nearbyLocations.map((location: string, idx: number) => (
-                    <span 
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm"
-                    >
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm">
                       <MapPinIcon />
                       {location}
                     </span>
@@ -615,33 +601,12 @@ const HostelDetail: React.FC = () => {
             <div>
               <h2 className="text-xl font-semibold text-slate-900 mb-4">Facilities & Amenities</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FacilityItem 
-                  icon={<WifiIcon />} 
-                  label="WiFi Available" 
-                  available={hostel.facilities?.wifiEnabled} 
-                />
-                <FacilityItem 
-                  icon={<BoltIcon />} 
-                  label="Electricity Backup" 
-                  available={hostel.facilities?.electricityBackup} 
-                />
-                <FacilityItem 
-                  icon={<ThermometerIcon />} 
-                  label="Hot/Cold Water" 
-                  available={hostel.facilities?.hotColdWaterBath} 
-                />
-                <FacilityItem 
-                  icon={<DropletIcon />} 
-                  label="Drinking Water" 
-                  available={hostel.facilities?.drinkingWater} 
-                />
+                <FacilityItem icon={<WifiIcon />} label="WiFi Available" available={hostel.facilities?.wifiEnabled} />
+                <FacilityItem icon={<BoltIcon />} label="Electricity Backup" available={hostel.facilities?.electricityBackup} />
+                <FacilityItem icon={<ThermometerIcon />} label="Hot/Cold Water" available={hostel.facilities?.hotColdWaterBath} />
+                <FacilityItem icon={<DropletIcon />} label="Drinking Water" available={hostel.facilities?.drinkingWater} />
                 {hostel.facilities?.customFacilities?.map((facility: string, idx: number) => (
-                  <FacilityItem 
-                    key={idx}
-                    icon={<CheckIcon />} 
-                    label={facility} 
-                    available={true} 
-                  />
+                  <FacilityItem key={idx} icon={<CheckIcon />} label={facility} available={true} />
                 ))}
               </div>
             </div>
@@ -657,9 +622,7 @@ const HostelDetail: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium text-amber-800 mb-2">House Rules</h3>
-                      <p className="text-amber-700 whitespace-pre-wrap leading-relaxed">
-                        {hostel.rules}
-                      </p>
+                      <p className="text-amber-700 whitespace-pre-wrap leading-relaxed">{hostel.rules}</p>
                     </div>
                   </div>
                 </div>
@@ -669,25 +632,18 @@ const HostelDetail: React.FC = () => {
             {/* Reviews */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Reviews ({hostel.reviewCount || 0})
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-900">Reviews ({hostel.reviewCount || 0})</h2>
                 {hostel.reviews?.length > 3 && (
-                  <button className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                    View all reviews
-                  </button>
+                  <button className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">View all reviews</button>
                 )}
               </div>
-
               {!hostel.reviews || hostel.reviews.length === 0 ? (
                 <div className="p-8 bg-slate-50 rounded-xl text-center">
                   <p className="text-slate-500">No reviews yet. Be the first to review!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {hostel.reviews.slice(0, 3).map((review: any) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
+                  {hostel.reviews.slice(0, 3).map((review: any) => (<ReviewCard key={review.id} review={review} />))}
                 </div>
               )}
             </div>
@@ -697,31 +653,40 @@ const HostelDetail: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                {/* Price */}
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-slate-900">
-                      Rs. {getPrice()?.toLocaleString()}
-                    </span>
-                    <span className="text-slate-500">{getPriceLabel()}/month</span>
+                {/* Selected Room Type Price */}
+                {selectedRoom && (
+                  <div className="mb-6">
+                    <p className="text-sm text-slate-500 mb-1">Selected: {ROOM_TYPE_LABELS[selectedRoom.type]}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-slate-900">Rs. {selectedRoom.price.toLocaleString()}</span>
+                      <span className="text-slate-500">{selectedRoom.type === 'PRIVATE' ? '/room' : '/person'}/month</span>
+                    </div>
+                    <p className="text-sm text-slate-500 mt-1">
+                      {selectedRoom.availableRooms} of {selectedRoom.totalRooms} rooms available
+                    </p>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">
-                    {hostel.availableRooms} of {hostel.totalRooms} rooms available
-                  </p>
-                </div>
+                )}
+
+                {!selectedRoom && (
+                  <div className="mb-6">
+                    <p className="text-slate-600">Select a room type to see pricing</p>
+                  </div>
+                )}
 
                 {/* Actions */}
-                {user?.role === 'STUDENT' && hostel.availableRooms > 0 && (
+                {user?.role === 'STUDENT' && hasAvailableRooms && (
                   <div className="space-y-3">
                     <button
                       onClick={handleBook}
-                      className="w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all"
+                      disabled={!selectedRoomType}
+                      className="w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Book Now
                     </button>
                     <button
                       onClick={() => setShowReserveModal(true)}
-                      className="w-full py-3 px-4 bg-white text-slate-700 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      disabled={!selectedRoomType}
+                      className="w-full py-3 px-4 bg-white text-slate-700 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <BookmarkIcon />
                       Reserve for Later
@@ -736,16 +701,13 @@ const HostelDetail: React.FC = () => {
                   </div>
                 )}
 
-                {user?.role === 'STUDENT' && hostel.availableRooms === 0 && (
+                {user?.role === 'STUDENT' && !hasAvailableRooms && (
                   <div className="space-y-3">
                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
                       <p className="text-red-700 font-medium">No Rooms Available</p>
                       <p className="text-sm text-red-600 mt-1">All rooms are currently occupied</p>
                     </div>
-                    <button
-                      onClick={handleChat}
-                      className="w-full py-3 px-4 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                    >
+                    <button onClick={handleChat} className="w-full py-3 px-4 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
                       <ChatIcon />
                       Contact Manager
                     </button>
@@ -754,22 +716,16 @@ const HostelDetail: React.FC = () => {
 
                 {!isAuthenticated && (
                   <div className="space-y-3">
-                    <Link
-                      to="/login"
-                      className="block w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 text-center transition-colors"
-                    >
+                    <Link to="/login" className="block w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 text-center transition-colors">
                       Sign in to Book
                     </Link>
                     <p className="text-sm text-slate-500 text-center">
                       New to HostelHub?{' '}
-                      <Link to="/register" className="text-slate-900 font-medium hover:underline">
-                        Create an account
-                      </Link>
+                      <Link to="/register" className="text-slate-900 font-medium hover:underline">Create an account</Link>
                     </p>
                   </div>
                 )}
 
-                {/* Divider */}
                 <div className="h-px bg-slate-200 my-6" />
 
                 {/* Manager Info */}
@@ -780,9 +736,7 @@ const HostelDetail: React.FC = () => {
                       {hostel.manager?.email?.charAt(0).toUpperCase() || 'M'}
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900">
-                        {hostel.manager?.name || 'Hostel Manager'}
-                      </p>
+                      <p className="font-medium text-slate-900">{hostel.manager?.name || 'Hostel Manager'}</p>
                       <div className="flex items-center gap-1 text-sm text-slate-500">
                         <ClockIcon />
                         <span>Usually responds within 1 hour</span>
@@ -792,39 +746,31 @@ const HostelDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Report Link */}
               <p className="text-center mt-4">
-                <button className="text-sm text-slate-500 hover:text-slate-700 underline transition-colors">
-                  Report this listing
-                </button>
+                <button className="text-sm text-slate-500 hover:text-slate-700 underline transition-colors">Report this listing</button>
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ==================== RESERVE MODAL ==================== */}
+      {/* Reserve Modal */}
       {showReserveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-slate-900">Reserve Room</h3>
-              <button
-                onClick={() => setShowReserveModal(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-              >
+              <button onClick={() => setShowReserveModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                 <CloseIcon />
               </button>
             </div>
             
             <p className="text-slate-600 mb-4">
-              Reserve a room at {hostel.hostelName}. The manager will contact you to confirm.
+              Reserve a <span className="font-medium">{selectedRoomType && ROOM_TYPE_LABELS[selectedRoomType as keyof typeof ROOM_TYPE_LABELS]}</span> at {hostel.hostelName}. The manager will contact you to confirm.
             </p>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Message (Optional)
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Message (Optional)</label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -835,10 +781,7 @@ const HostelDetail: React.FC = () => {
             </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowReserveModal(false)}
-                className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors"
-              >
+              <button onClick={() => setShowReserveModal(false)} className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors">
                 Cancel
               </button>
               <button
@@ -846,14 +789,7 @@ const HostelDetail: React.FC = () => {
                 disabled={reserving}
                 className="flex-1 py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
               >
-                {reserving ? (
-                  <>
-                    <SpinnerIcon />
-                    Reserving...
-                  </>
-                ) : (
-                  'Confirm Reservation'
-                )}
+                {reserving ? (<><SpinnerIcon /> Reserving...</>) : 'Confirm Reservation'}
               </button>
             </div>
           </div>

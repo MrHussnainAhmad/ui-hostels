@@ -1,26 +1,43 @@
+// src/pages/manager/CreateHostel.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { hostelsApi } from '../../lib/api';
+import { hostelsApi, createFormData } from '../../lib/api';
+import ImageUpload from '../../components/ImageUpload';
+
+type RoomType = 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM';
+
+interface RoomTypeConfig {
+  type: RoomType;
+  totalRooms: number;
+  personsInRoom: number;
+  price: number;
+  fullRoomPriceDiscounted?: number | null;
+}
+
+const ROOM_TYPE_LABELS: Record<RoomType, string> = {
+  SHARED: 'Shared Room',
+  PRIVATE: 'Private Room',
+  SHARED_FULLROOM: 'Shared Full Room',
+};
+
+const ROOM_TYPE_DESCRIPTIONS: Record<RoomType, string> = {
+  SHARED: 'Multiple students share a room, price per person',
+  PRIVATE: 'Single student gets entire room, price per room',
+  SHARED_FULLROOM: 'Students can book full room or share, price per person with optional group discount',
+};
 
 const CreateHostel: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [roomImageFiles, setRoomImageFiles] = useState<File[]>([]);
 
   const [formData, setFormData] = useState({
     hostelName: '',
     city: '',
     address: '',
     nearbyLocations: [''],
-    totalRooms: 1,
-    hostelType: 'SHARED' as 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM',
     hostelFor: 'BOYS' as 'BOYS' | 'GIRLS',
-    personsInRoom: 2,
-    roomPrice: '',
-    pricePerHeadShared: '',
-    pricePerHeadFullRoom: '',
-    fullRoomPriceDiscounted: '',
-    roomImages: [''],
     rules: '',
     seoKeywords: [''],
     facilities: {
@@ -36,6 +53,11 @@ const CreateHostel: React.FC = () => {
       customFacilities: [''],
     },
   });
+
+  // Room types state - can have multiple
+  const [roomTypes, setRoomTypes] = useState<RoomTypeConfig[]>([
+    { type: 'SHARED', totalRooms: 1, personsInRoom: 2, price: 0 },
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -87,23 +109,86 @@ const CreateHostel: React.FC = () => {
     }
   };
 
+  // Room type handlers
+  const handleRoomTypeChange = (index: number, field: keyof RoomTypeConfig, value: any) => {
+    const updated = [...roomTypes];
+    updated[index] = { ...updated[index], [field]: value };
+    setRoomTypes(updated);
+  };
+
+  const addRoomType = () => {
+    // Find which types are not yet added
+    const existingTypes = roomTypes.map(rt => rt.type);
+    const availableTypes: RoomType[] = ['SHARED', 'PRIVATE', 'SHARED_FULLROOM'].filter(
+      t => !existingTypes.includes(t as RoomType)
+    ) as RoomType[];
+
+    if (availableTypes.length === 0) {
+      setError('All room types have been added');
+      return;
+    }
+
+    setRoomTypes([
+      ...roomTypes,
+      { type: availableTypes[0], totalRooms: 1, personsInRoom: availableTypes[0] === 'PRIVATE' ? 1 : 2, price: 0 },
+    ]);
+  };
+
+  const removeRoomType = (index: number) => {
+    if (roomTypes.length === 1) {
+      setError('At least one room type is required');
+      return;
+    }
+    setRoomTypes(roomTypes.filter((_, i) => i !== index));
+  };
+
+  const getAvailableTypesForSelect = (currentType: RoomType): RoomType[] => {
+    const existingTypes = roomTypes.map(rt => rt.type);
+    return ['SHARED', 'PRIVATE', 'SHARED_FULLROOM'].filter(
+      t => t === currentType || !existingTypes.includes(t as RoomType)
+    ) as RoomType[];
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (roomImageFiles.length === 0) {
+      setError('Please upload at least one room image');
+      return;
+    }
+
+    if (roomTypes.length === 0) {
+      setError('Please add at least one room type');
+      return;
+    }
+
+    // Validate room types
+    for (const rt of roomTypes) {
+      if (rt.price <= 0) {
+        setError(`Please enter a valid price for ${ROOM_TYPE_LABELS[rt.type]}`);
+        return;
+      }
+      if (rt.totalRooms <= 0) {
+        setError(`Please enter valid total rooms for ${ROOM_TYPE_LABELS[rt.type]}`);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       const payload = {
         ...formData,
-        totalRooms: Number(formData.totalRooms),
-        personsInRoom: Number(formData.personsInRoom),
-        roomPrice: formData.roomPrice ? Number(formData.roomPrice) : null,
-        pricePerHeadShared: formData.pricePerHeadShared ? Number(formData.pricePerHeadShared) : null,
-        pricePerHeadFullRoom: formData.pricePerHeadFullRoom ? Number(formData.pricePerHeadFullRoom) : null,
-        fullRoomPriceDiscounted: formData.fullRoomPriceDiscounted ? Number(formData.fullRoomPriceDiscounted) : null,
         nearbyLocations: formData.nearbyLocations.filter((n) => n.trim()),
-        roomImages: formData.roomImages.filter((n) => n.trim()),
         seoKeywords: formData.seoKeywords.filter((n) => n.trim()),
+        roomTypes: roomTypes.map(rt => ({
+          type: rt.type,
+          totalRooms: Number(rt.totalRooms),
+          personsInRoom: Number(rt.personsInRoom),
+          price: Number(rt.price),
+          fullRoomPriceDiscounted: rt.fullRoomPriceDiscounted ? Number(rt.fullRoomPriceDiscounted) : null,
+        })),
         facilities: {
           ...formData.facilities,
           electricityRatePerUnit: formData.facilities.electricityRatePerUnit
@@ -114,7 +199,11 @@ const CreateHostel: React.FC = () => {
         },
       };
 
-      await hostelsApi.create(payload);
+      const formDataToSend = createFormData(payload, [
+        { fieldName: 'roomImages', files: roomImageFiles },
+      ]);
+
+      await hostelsApi.create(formDataToSend);
       navigate('/manager');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create hostel');
@@ -169,116 +258,132 @@ const CreateHostel: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Hostel For</label>
-              <select
-                name="hostelFor"
-                value={formData.hostelFor}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="BOYS">Boys</option>
-                <option value="GIRLS">Girls</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Hostel Type</label>
-              <select
-                name="hostelType"
-                value={formData.hostelType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="SHARED">Shared</option>
-                <option value="PRIVATE">Private</option>
-                <option value="SHARED_FULLROOM">Shared Full Room</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Persons per Room</label>
-              <input
-                type="number"
-                name="personsInRoom"
-                value={formData.personsInRoom}
-                onChange={handleChange}
-                min={1}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Hostel For</label>
+            <select
+              name="hostelFor"
+              value={formData.hostelFor}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="BOYS">Boys</option>
+              <option value="GIRLS">Girls</option>
+            </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Total Rooms</label>
-              <input
-                type="number"
-                name="totalRooms"
-                value={formData.totalRooms}
-                onChange={handleChange}
-                min={1}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Pricing */}
+          {/* Room Types Section */}
           <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Pricing</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {formData.hostelType === 'PRIVATE' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Room Price (Rs.)</label>
-                  <input
-                    type="number"
-                    name="roomPrice"
-                    value={formData.roomPrice}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded-md"
-                    required
-                  />
-                </div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">Room Types</h3>
+                <p className="text-sm text-gray-500">Add different types of rooms available in your hostel</p>
+              </div>
+              {roomTypes.length < 3 && (
+                <button
+                  type="button"
+                  onClick={addRoomType}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+                >
+                  + Add Room Type
+                </button>
               )}
-              {formData.hostelType === 'SHARED' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Price Per Head Shared (Rs.)</label>
-                  <input
-                    type="number"
-                    name="pricePerHeadShared"
-                    value={formData.pricePerHeadShared}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded-md"
-                    required
-                  />
-                </div>
-              )}
-              {formData.hostelType === 'SHARED_FULLROOM' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Price Per Head Full Room (Rs.)</label>
-                    <input
-                      type="number"
-                      name="pricePerHeadFullRoom"
-                      value={formData.pricePerHeadFullRoom}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-md"
-                      required
-                    />
+            </div>
+
+            <div className="space-y-4">
+              {roomTypes.map((roomType, index) => (
+                <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-indigo-600">Room Type {index + 1}</h4>
+                    {roomTypes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeRoomType(index)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Full Room Discounted Price (Rs., optional)</label>
-                    <input
-                      type="number"
-                      name="fullRoomPriceDiscounted"
-                      value={formData.fullRoomPriceDiscounted}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-md"
-                    />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Type</label>
+                      <select
+                        value={roomType.type}
+                        onChange={(e) => handleRoomTypeChange(index, 'type', e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        {getAvailableTypesForSelect(roomType.type).map((type) => (
+                          <option key={type} value={type}>
+                            {ROOM_TYPE_LABELS[type]}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {ROOM_TYPE_DESCRIPTIONS[roomType.type]}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Total Rooms</label>
+                      <input
+                        type="number"
+                        value={roomType.totalRooms}
+                        onChange={(e) => handleRoomTypeChange(index, 'totalRooms', e.target.value)}
+                        min={1}
+                        className="w-full px-3 py-2 border rounded-md"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Persons per Room</label>
+                      <input
+                        type="number"
+                        value={roomType.personsInRoom}
+                        onChange={(e) => handleRoomTypeChange(index, 'personsInRoom', e.target.value)}
+                        min={1}
+                        className="w-full px-3 py-2 border rounded-md"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        {roomType.type === 'PRIVATE' ? 'Price per Room (Rs.)' : 'Price per Person (Rs.)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={roomType.price || ''}
+                        onChange={(e) => handleRoomTypeChange(index, 'price', e.target.value)}
+                        min={1}
+                        className="w-full px-3 py-2 border rounded-md"
+                        required
+                      />
+                    </div>
+
+                    {roomType.type === 'SHARED_FULLROOM' && (
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Full Room Discounted Price (Rs., optional)
+                        </label>
+                        <input
+                          type="number"
+                          value={roomType.fullRoomPriceDiscounted || ''}
+                          onChange={(e) =>
+                            handleRoomTypeChange(index, 'fullRoomPriceDiscounted', e.target.value || null)
+                          }
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="Discount if entire room is booked by one group"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Total price if a group books the entire room (optional discount)
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -413,22 +518,15 @@ const CreateHostel: React.FC = () => {
             </div>
           </div>
 
-          {/* Images */}
+          {/* Room Images */}
           <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Room Images (URLs)</h3>
-            {formData.roomImages.map((img, idx) => (
-              <input
-                key={idx}
-                type="url"
-                value={img}
-                onChange={(e) => handleArrayChange('roomImages', idx, e.target.value)}
-                className="w-full px-3 py-2 border rounded-md mb-2"
-                placeholder="https://example.com/room.jpg"
-              />
-            ))}
-            <button type="button" onClick={() => addArrayItem('roomImages')} className="text-indigo-600 text-sm">
-              + Add Image
-            </button>
+            <ImageUpload
+              label="Room Images (Max 10)"
+              multiple
+              maxFiles={10}
+              value={roomImageFiles}
+              onChange={setRoomImageFiles}
+            />
           </div>
 
           {/* Nearby Locations */}
