@@ -10,6 +10,7 @@ const HostelStudents: React.FC = () => {
 
   useEffect(() => {
     loadStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId]);
 
   const loadStudents = async () => {
@@ -23,92 +24,157 @@ const HostelStudents: React.FC = () => {
     }
   };
 
-  const handleKick = async (bookingId: string, reason: 'LEFT_HOSTEL' | 'VIOLATED_RULES') => {
-    if (!confirm(`Are you sure you want to kick this student? Reason: ${reason}`)) {
+  const handleKick = async (
+    bookingId: string,
+    reason: 'LEFT_HOSTEL' | 'VIOLATED_RULES'
+  ) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to mark this student as "${reason.replace(
+          '_',
+          ' '
+        )}"?`
+      )
+    ) {
       return;
     }
 
     setKicking(bookingId);
     try {
       await bookingsApi.kick(bookingId, { reason });
-      loadStudents();
+      await loadStudents();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to kick student');
+      alert(err.response?.data?.message || 'Failed to update student status');
     } finally {
       setKicking(null);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading students...
+        </p>
+      </main>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Current Students</h1>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+        {/* Header */}
+        <header>
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Manager • Students
+          </div>
+          <h1 className="text-2xl font-light text-gray-900 mb-1">
+            Current Students
+          </h1>
+          <p className="text-sm text-gray-500 font-light">
+            View and manage students currently staying in this hostel.
+          </p>
+        </header>
 
-      {students.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-          No students currently in this hostel.
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Student
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Joined
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {students.map((item) => (
-                <tr key={item.bookingId}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="font-medium">{item.student.user.email}</p>
-                    <p className="text-sm text-gray-500">{item.student.fatherName}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm">{item.student.phoneNumber}</p>
-                    <p className="text-sm text-gray-500">{item.student.whatsappNumber}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(item.joinedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleKick(item.bookingId, 'LEFT_HOSTEL')}
-                        disabled={kicking === item.bookingId}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 text-sm disabled:opacity-50"
-                      >
-                        Left Hostel
-                      </button>
-                      <button
-                        onClick={() => handleKick(item.bookingId, 'VIOLATED_RULES')}
-                        disabled={kicking === item.bookingId}
-                        className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm disabled:opacity-50"
-                      >
-                        Violated Rules
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+        {/* Content */}
+        {students.length === 0 ? (
+          <section className="border border-gray-100 bg-white px-6 py-8 text-center">
+            <p className="text-sm text-gray-500 font-light">
+              No students are currently assigned to this hostel.
+            </p>
+          </section>
+        ) : (
+          <section className="border border-gray-100 bg-white overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-sm font-light text-gray-900">
+                Active Students
+              </h2>
+              <span className="text-xs text-gray-500 font-light">
+                {students.length} total
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Student
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Contact
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Joined
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {students.map((item) => (
+                    <tr key={item.bookingId}>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <p className="text-sm text-gray-900 font-light">
+                          {item.student.user.email}
+                        </p>
+                        <p className="text-xs text-gray-500 font-light">
+                          {item.student.fatherName || '-'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <p className="text-sm text-gray-900 font-light">
+                          {item.student.phoneNumber || '-'}
+                        </p>
+                        <p className="text-xs text-gray-500 font-light">
+                          {item.student.whatsappNumber || '-'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs text-gray-500 font-light">
+                        {new Date(
+                          item.joinedAt
+                        ).toLocaleDateString('en-PK', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleKick(item.bookingId, 'LEFT_HOSTEL')
+                            }
+                            disabled={kicking === item.bookingId}
+                            className="px-3 py-1.5 border border-yellow-300 bg-yellow-50 text-[11px] text-yellow-800 font-light rounded hover:bg-yellow-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Left Hostel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleKick(
+                                item.bookingId,
+                                'VIOLATED_RULES'
+                              )
+                            }
+                            disabled={kicking === item.bookingId}
+                            className="px-3 py-1.5 border border-red-300 bg-red-50 text-[11px] text-red-700 font-light rounded hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Violated Rules
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
   );
 };
 

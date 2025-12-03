@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usersApi, hostelsApi, verificationsApi, feesApi } from '../../lib/api';
 
-// Type for room configuration
+// ==================== TYPES ====================
 interface RoomTypeConfig {
   type: 'SHARED' | 'PRIVATE' | 'SHARED_FULLROOM';
   totalRooms: number;
@@ -18,7 +18,7 @@ const ROOM_TYPE_LABELS: Record<string, string> = {
   SHARED_FULLROOM: 'Full Room',
 };
 
-// Helper function to calculate room totals from roomTypes array
+// ==================== HELPERS ====================
 const calculateRoomTotals = (hostel: any): { totalRooms: number; availableRooms: number } => {
   const roomTypes: RoomTypeConfig[] = Array.isArray(hostel.roomTypes) ? hostel.roomTypes : [];
   return {
@@ -27,13 +27,18 @@ const calculateRoomTotals = (hostel: any): { totalRooms: number; availableRooms:
   };
 };
 
-// Helper to get room types display string
 const getRoomTypesDisplay = (hostel: any): string => {
   const roomTypes: RoomTypeConfig[] = Array.isArray(hostel.roomTypes) ? hostel.roomTypes : [];
   if (roomTypes.length === 0) return 'N/A';
-  return roomTypes.map(rt => `${ROOM_TYPE_LABELS[rt.type] || rt.type}: ${rt.availableRooms}/${rt.totalRooms}`).join(' • ');
+  return roomTypes
+    .map(
+      (rt) =>
+        `${ROOM_TYPE_LABELS[rt.type] || rt.type}: ${rt.availableRooms}/${rt.totalRooms}`
+    )
+    .join(' • ');
 };
 
+// ==================== MAIN COMPONENT ====================
 const ManagerDashboard: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [hostels, setHostels] = useState<any[]>([]);
@@ -43,6 +48,7 @@ const ManagerDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -51,10 +57,12 @@ const ManagerDashboard: React.FC = () => {
         usersApi.getManagerProfile(),
         verificationsApi.getMy(),
       ]);
-      setProfile(profileRes.data.data);
+
+      const managerProfile = profileRes.data.data;
+      setProfile(managerProfile);
       setVerifications(verificationsRes.data.data);
 
-      if (profileRes.data.data.verified) {
+      if (managerProfile.verified) {
         const [hostelsRes, feeRes] = await Promise.all([
           hostelsApi.getMy(),
           feesApi.getPendingSummary(),
@@ -63,241 +71,305 @@ const ManagerDashboard: React.FC = () => {
         setFeeSummary(feeRes.data.data);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading manager dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate totals from all hostels
   const calculateAllHostelsTotals = () => {
     let totalRooms = 0;
     let availableRooms = 0;
-    
-    hostels.forEach(hostel => {
+
+    hostels.forEach((hostel) => {
       const totals = calculateRoomTotals(hostel);
       totalRooms += totals.totalRooms;
       availableRooms += totals.availableRooms;
     });
-    
+
     return { totalRooms, availableRooms };
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading manager dashboard...
+        </p>
+      </main>
+    );
   }
 
   const latestVerification = verifications[0];
 
+  // Not verified state
   if (!profile?.verified) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Manager Dashboard</h1>
-        
-        {latestVerification?.status === 'PENDING' ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-yellow-800 mb-2">
-              Verification Pending
-            </h2>
-            <p className="text-yellow-700">
-              Your verification is under review. Please wait for admin approval.
+      <main className="min-h-screen bg-white">
+        <div className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+          <header>
+            <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+              Manager Dashboard
+            </div>
+            <h1 className="text-2xl font-light text-gray-900 mb-1">
+              Account Verification
+            </h1>
+            <p className="text-sm text-gray-500 font-light">
+              Complete verification to start creating and managing hostels.
             </p>
-          </div>
-        ) : latestVerification?.status === 'REJECTED' ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">
-              Verification Rejected
-            </h2>
-            <p className="text-red-700 mb-4">
-              Reason: {latestVerification.adminComment || 'No reason provided'}
-            </p>
-            <Link
-              to="/manager/verification"
-              className="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600"
-            >
-              Submit Again
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">
-              Complete Verification
-            </h2>
-            <p className="text-blue-700 mb-4">
-              Please submit your verification to start managing hostels.
-            </p>
-            <Link
-              to="/manager/verification"
-              className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
-            >
-              Submit Verification
-            </Link>
-          </div>
-        )}
-      </div>
+          </header>
+
+          {latestVerification?.status === 'PENDING' ? (
+            <section className="border border-yellow-200 bg-yellow-50 px-6 py-6">
+              <h2 className="text-lg font-light text-yellow-900 mb-2">
+                Verification Pending
+              </h2>
+              <p className="text-sm text-yellow-800 font-light">
+                Your verification request is under review. You&apos;ll be able to
+                manage hostels once an admin approves your details.
+              </p>
+            </section>
+          ) : latestVerification?.status === 'REJECTED' ? (
+            <section className="border border-red-200 bg-red-50 px-6 py-6">
+              <h2 className="text-lg font-light text-red-900 mb-2">
+                Verification Rejected
+              </h2>
+              <p className="text-sm text-red-700 font-light mb-3">
+                Reason:{' '}
+                {latestVerification.adminComment ||
+                  'No reason provided by admin.'}
+              </p>
+              <Link
+                to="/manager/verification"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-red-600 text-white text-sm font-light hover:bg-red-700 transition-colors"
+              >
+                Submit Again
+              </Link>
+            </section>
+          ) : (
+            <section className="border border-blue-200 bg-blue-50 px-6 py-6">
+              <h2 className="text-lg font-light text-blue-900 mb-2">
+                Complete Verification
+              </h2>
+              <p className="text-sm text-blue-800 font-light mb-3">
+                Submit your verification details to start listing hostels and
+                managing students.
+              </p>
+              <Link
+                to="/manager/verification"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white text-sm font-light hover:bg-blue-700 transition-colors"
+              >
+                Submit Verification
+              </Link>
+            </section>
+          )}
+        </div>
+      </main>
     );
   }
 
   const { totalRooms, availableRooms } = calculateAllHostelsTotals();
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manager Dashboard</h1>
-        <Link
-          to="/manager/hostels/create"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-        >
-          Add New Hostel
-        </Link>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm">Total Hostels</h3>
-          <p className="text-3xl font-bold">{hostels.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm">Total Rooms</h3>
-          <p className="text-3xl font-bold">{totalRooms}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm">Available Rooms</h3>
-          <p className="text-3xl font-bold">{availableRooms}</p>
-        </div>
-      </div>
-
-      {/* Monthly Fee Summary */}
-      {feeSummary.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Monthly Fee Summary</h2>
-          <div className="space-y-3">
-            {feeSummary.map((fee) => (
-              <div
-                key={fee.hostelId}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
-              >
-                <div>
-                  <p className="font-medium">{fee.hostelName}</p>
-                  <p className="text-sm text-gray-600">
-                    {fee.activeStudents} students × Rs. 100 = Rs. {fee.feeAmount}
-                  </p>
-                </div>
-                {fee.submitted ? (
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      fee.status === 'APPROVED'
-                        ? 'bg-green-100 text-green-800'
-                        : fee.status === 'PENDING'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {fee.status}
-                  </span>
-                ) : (
-                  <Link
-                    to={`/manager/fees/submit?hostelId=${fee.hostelId}`}
-                    className="bg-indigo-600 text-white px-4 py-1 rounded-md hover:bg-indigo-700 text-sm"
-                  >
-                    Pay Fee
-                  </Link>
-                )}
-              </div>
-            ))}
+    <main className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+              Manager Dashboard
+            </div>
+            <h1 className="text-2xl font-light text-gray-900 mb-1">
+              Hello, {profile?.user?.email || 'Manager'}
+            </h1>
+            <p className="text-sm text-gray-500 font-light">
+              Overview of your hostels, rooms and monthly fees.
+            </p>
           </div>
-        </div>
-      )}
+          <Link
+            to="/manager/hostels/create"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-gray-900 text-white text-sm font-light hover:bg-gray-800 transition-colors"
+          >
+            Add New Hostel
+          </Link>
+        </header>
 
-      {/* Hostels List */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">My Hostels</h2>
-        {hostels.length === 0 ? (
-          <p className="text-gray-500">No hostels yet. Create your first hostel.</p>
-        ) : (
-          <div className="space-y-4">
-            {hostels.map((hostel) => {
-              const { totalRooms: hostelTotal, availableRooms: hostelAvailable } = calculateRoomTotals(hostel);
-              
-              return (
+        {/* Stats */}
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="border border-gray-100 bg-white px-5 py-4">
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Total Hostels
+            </p>
+            <p className="text-2xl font-light text-gray-900">
+              {hostels.length}
+            </p>
+          </div>
+          <div className="border border-gray-100 bg-white px-5 py-4">
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Total Rooms
+            </p>
+            <p className="text-2xl font-light text-gray-900">
+              {totalRooms}
+            </p>
+          </div>
+          <div className="border border-gray-100 bg-white px-5 py-4">
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Available Rooms
+            </p>
+            <p className="text-2xl font-light text-gray-900">
+              {availableRooms}
+            </p>
+          </div>
+        </section>
+
+        {/* Monthly Fee Summary */}
+        {feeSummary.length > 0 && (
+          <section className="border border-gray-100 bg-white px-6 py-6">
+            <h2 className="text-sm font-light text-gray-900 mb-4">
+              Monthly Platform Fee Summary
+            </h2>
+            <div className="space-y-3">
+              {feeSummary.map((fee) => (
                 <div
-                  key={hostel.id}
-                  className="border rounded-lg p-4 flex justify-between items-center"
+                  key={fee.hostelId}
+                  className="flex items-center justify-between gap-4 border border-gray-100 bg-gray-50 px-4 py-3 text-sm"
                 >
                   <div>
-                    <h3 className="font-semibold">{hostel.hostelName}</h3>
-                    <p className="text-sm text-gray-600">
-                      {hostel.city} • {hostelAvailable}/{hostelTotal} rooms available
+                    <p className="text-sm font-light text-gray-900">
+                      {fee.hostelName}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {getRoomTypesDisplay(hostel)}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Rating: {(hostel.averageRating || 0).toFixed(1)} ({hostel.reviewCount || 0} reviews)
+                    <p className="text-xs text-gray-600 font-light">
+                      {fee.activeStudents} students × Rs. 100 = Rs.{' '}
+                      {fee.feeAmount}
                     </p>
                   </div>
-                  <div className="flex space-x-2">
-                    <Link
-                      to={`/manager/hostels/${hostel.id}/students`}
-                      className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 text-sm"
+                  {fee.submitted ? (
+                    <span
+                      className={`inline-flex items-center px-3 py-1 text-xs font-light border rounded-full ${
+                        fee.status === 'APPROVED'
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : fee.status === 'PENDING'
+                          ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          : 'bg-red-50 text-red-700 border-red-200'
+                      }`}
                     >
-                      Students
-                    </Link>
+                      {fee.status}
+                    </span>
+                  ) : (
                     <Link
-                      to={`/manager/hostels/${hostel.id}/bookings`}
-                      className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm"
+                      to={`/manager/fees/submit?hostelId=${fee.hostelId}`}
+                      className="inline-flex items-center px-4 py-1.5 bg-gray-900 text-white text-xs font-light rounded hover:bg-gray-800 transition-colors"
                     >
-                      Bookings
+                      Pay Fee
                     </Link>
-                    <Link
-                      to={`/manager/hostels/${hostel.id}/reservations`}
-                      className="bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600 text-sm"
-                    >
-                      Reservations
-                    </Link>
-                    <Link
-                      to={`/manager/hostels/${hostel.id}/edit`}
-                      className="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600 text-sm"
-                    >
-                      Edit
-                    </Link>
-                  </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          </section>
         )}
-      </div>
 
-      {/* Quick Links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link
-          to="/manager/fees"
-          className="bg-white rounded-lg shadow p-4 text-center hover:bg-gray-50"
-        >
-          <p className="font-medium">Fee History</p>
-        </Link>
-        <Link
-          to="/manager/reports"
-          className="bg-white rounded-lg shadow p-4 text-center hover:bg-gray-50"
-        >
-          <p className="font-medium">Reports</p>
-        </Link>
-        <Link
-          to="/manager/chat"
-          className="bg-white rounded-lg shadow p-4 text-center hover:bg-gray-50"
-        >
-          <p className="font-medium">Messages</p>
-        </Link>
-        <Link
-          to="/manager/verification"
-          className="bg-white rounded-lg shadow p-4 text-center hover:bg-gray-50"
-        >
-          <p className="font-medium">Verification Status</p>
-        </Link>
+        {/* Hostels List */}
+        <section className="border border-gray-100 bg-white px-6 py-6">
+          <h2 className="text-sm font-light text-gray-900 mb-4">
+            My Hostels
+          </h2>
+          {hostels.length === 0 ? (
+            <p className="text-sm text-gray-500 font-light">
+              No hostels yet. Create your first hostel to get started.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {hostels.map((hostel) => {
+                const {
+                  totalRooms: hostelTotal,
+                  availableRooms: hostelAvailable,
+                } = calculateRoomTotals(hostel);
+
+                return (
+                  <article
+                    key={hostel.id}
+                    className="border border-gray-100 bg-gray-50 px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm"
+                  >
+                    <div>
+                      <h3 className="text-sm font-light text-gray-900 mb-0.5">
+                        {hostel.hostelName}
+                      </h3>
+                      <p className="text-xs text-gray-600 font-light">
+                        {hostel.city} • {hostelAvailable}/{hostelTotal} rooms
+                        available
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-light mt-1">
+                        {getRoomTypesDisplay(hostel)}
+                      </p>
+                      <p className="text-xs text-gray-600 font-light mt-1">
+                        Rating:{' '}
+                        {(hostel.averageRating || 0).toFixed(1)} (
+                        {hostel.reviewCount || 0} reviews)
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        to={`/manager/hostels/${hostel.id}/students`}
+                        className="px-3 py-1.5 bg-green-600 text-white text-xs font-light rounded hover:bg-green-700 transition-colors"
+                      >
+                        Students
+                      </Link>
+                      <Link
+                        to={`/manager/hostels/${hostel.id}/bookings`}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-light rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Bookings
+                      </Link>
+                      <Link
+                        to={`/manager/hostels/${hostel.id}/reservations`}
+                        className="px-3 py-1.5 bg-purple-600 text-white text-xs font-light rounded hover:bg-purple-700 transition-colors"
+                      >
+                        Reservations
+                      </Link>
+                      <Link
+                        to={`/manager/hostels/${hostel.id}/edit`}
+                        className="px-3 py-1.5 bg-gray-600 text-white text-xs font-light rounded hover:bg-gray-700 transition-colors"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Quick Links */}
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Link
+            to="/manager/fees"
+            className="border border-gray-100 bg-white px-4 py-4 text-center text-sm text-gray-900 font-light hover:bg-gray-50 transition-colors"
+          >
+            Fee History
+          </Link>
+          <Link
+            to="/manager/reports"
+            className="border border-gray-100 bg-white px-4 py-4 text-center text-sm text-gray-900 font-light hover:bg-gray-50 transition-colors"
+          >
+            Reports
+          </Link>
+          <Link
+            to="/manager/chat"
+            className="border border-gray-100 bg-white px-4 py-4 text-center text-sm text-gray-900 font-light hover:bg-gray-50 transition-colors"
+          >
+            Messages
+          </Link>
+          <Link
+            to="/manager/verification"
+            className="border border-gray-100 bg-white px-4 py-4 text-center text-sm text-gray-900 font-light hover:bg-gray-50 transition-colors"
+          >
+            Verification Status
+          </Link>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

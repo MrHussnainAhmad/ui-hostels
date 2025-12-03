@@ -8,6 +8,10 @@ import { useAuthStore } from './store/authStore';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import Privacy from './pages/Privacy'; // your existing privacy/policy page
+import Terms from './pages/Terms';
+import About from './pages/About';
+import Contact from './pages/Contact';
 
 // Hostel Pages
 import HostelList from './pages/hostels/HostelList';
@@ -43,7 +47,6 @@ import Chat from './pages/chat/Chat';
 const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
 
-  // Redirect based on role
   const getDefaultRoute = () => {
     if (!isAuthenticated || !user) return '/';
     switch (user.role) {
@@ -64,13 +67,22 @@ const App: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+
         <Route
           path="/login"
-          element={isAuthenticated ? <Navigate to={getDefaultRoute()} /> : <Login />}
+          element={
+            isAuthenticated ? <Navigate to={getDefaultRoute()} /> : <Login />
+          }
         />
         <Route
           path="/register"
-          element={isAuthenticated ? <Navigate to={getDefaultRoute()} /> : <Register />}
+          element={
+            isAuthenticated ? <Navigate to={getDefaultRoute()} /> : <Register />
+          }
         />
 
         {/* Hostel Public Routes */}
@@ -253,14 +265,14 @@ const App: React.FC = () => {
           }
         />
 
-        {/* Catch all - redirect to home */}
+        {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );
 };
 
-// Manager Reports Component (simple view)
+// Manager Reports Component
 const ManagerReports: React.FC = () => {
   const [reports, setReports] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -295,13 +307,23 @@ const ManagerReports: React.FC = () => {
             <div key={report.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between">
                 <div>
-                  <p className="font-medium">Report from: {report.student?.user?.email}</p>
-                  <p className="text-sm text-gray-600">Hostel: {report.booking?.hostel?.hostelName}</p>
-                  <p className="text-sm text-gray-600 mt-2">{report.description}</p>
+                  <p className="font-medium">
+                    Report from: {report.student?.user?.email}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Hostel: {report.booking?.hostel?.hostelName}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    {report.description}
+                  </p>
                   {report.finalResolution && (
                     <div className="mt-3 p-3 bg-gray-50 rounded">
-                      <p className="text-sm font-medium">Resolution: {report.finalResolution}</p>
-                      <p className="text-xs text-gray-500">Decision: {report.decision}</p>
+                      <p className="text-sm font-medium">
+                        Resolution: {report.finalResolution}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Decision: {report.decision}
+                      </p>
                     </div>
                   )}
                 </div>

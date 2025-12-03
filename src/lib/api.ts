@@ -72,7 +72,7 @@ export const createFormData = (
 
 // Auth API
 export const authApi = {
-  register: (data: { email: string; password: string; role: string }) =>
+  register: (data: { email: string; password: string; role: string; fullName?: string }) =>
     api.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
@@ -174,6 +174,5 @@ export const chatApi = {
   getMessages: (conversationId: string) => api.get(`/chat/conversation/${conversationId}/messages`),
   getAllConversations: () => api.get('/chat/admin/conversations'),
 };
-
 
 export default api;

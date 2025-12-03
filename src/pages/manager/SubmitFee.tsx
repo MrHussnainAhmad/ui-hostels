@@ -27,7 +27,7 @@ const SubmitFee: React.FC = () => {
     setError('');
 
     if (paymentProofFiles.length === 0) {
-      setError('Please upload payment proof image');
+      setError('Please upload payment proof image.');
       return;
     }
 
@@ -42,63 +42,111 @@ const SubmitFee: React.FC = () => {
       alert('Fee submitted successfully!');
       navigate('/manager');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to submit fee');
+      setError(err.response?.data?.message || 'Failed to submit fee.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold mb-6">Submit Monthly Admin Fee</h1>
-
-        {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Month</label>
-            <input
-              type="month"
-              name="month"
-              value={formData.month}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
+    <main className="min-h-screen bg-white">
+      <div className="max-w-xl mx-auto px-6 py-10">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Manager • Fees
           </div>
+          <h1 className="text-2xl font-light text-gray-900 mb-1">
+            Submit Monthly Admin Fee
+          </h1>
+          <p className="text-sm text-gray-500 font-light">
+            Upload payment proof and select the month for this hostel&apos;s
+            platform fee.
+          </p>
+        </div>
 
-          <ImageUpload
-            label="Payment Proof"
-            value={paymentProofFiles}
-            onChange={setPaymentProofFiles}
-          />
+        {/* Card */}
+        <div className="border border-gray-100 bg-white px-6 py-7 sm:px-8 sm:py-8">
+          {error && (
+            <div className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-light">
+              {error}
+            </div>
+          )}
 
-          <div className="bg-blue-50 p-4 rounded-md">
-            <p className="text-sm text-blue-800">
-              Fee: Rs. 100 per active student per month
-            </p>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Hostel ID (read-only info) */}
+            {hostelId && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-light">
+                  Hostel ID
+                </label>
+                <input
+                  type="text"
+                  value={hostelId}
+                  disabled
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 text-sm text-gray-700 font-light"
+                />
+              </div>
+            )}
 
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/manager')}
-              className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-md hover:bg-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading ? 'Submitting...' : 'Submit Fee'}
-            </button>
-          </div>
-        </form>
+            {/* Month */}
+            <div>
+              <label
+                htmlFor="month"
+                className="block text-xs text-gray-500 mb-1 font-light"
+              >
+                Month
+              </label>
+              <input
+                id="month"
+                type="month"
+                name="month"
+                value={formData.month}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-gray-900 font-light"
+              />
+            </div>
+
+            {/* Payment Proof */}
+            <div>
+              <ImageUpload
+                label="Payment Proof"
+                value={paymentProofFiles}
+                onChange={setPaymentProofFiles}
+              />
+            </div>
+
+            {/* Info Notice */}
+            <div className="border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 font-light">
+              Fee is calculated as{' '}
+              <span className="font-normal">
+                Rs. 100 per active student per month
+              </span>
+              . Make sure you&apos;ve paid the correct amount before submitting.
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/manager')}
+                className="w-full sm:w-1/2 py-2.5 border border-gray-200 text-sm font-light text-gray-900 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-1/2 py-2.5 bg-gray-900 text-white text-sm font-light hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Submitting...' : 'Submit Fee'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
 

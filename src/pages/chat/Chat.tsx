@@ -47,7 +47,7 @@ const Chat: React.FC = () => {
     try {
       await chatApi.sendMessage({
         conversationId: selectedConversation.id,
-        text: newMessage,
+        text: newMessage.trim(),
       });
       setNewMessage('');
       loadMessages(selectedConversation.id);
@@ -58,101 +58,196 @@ const Chat: React.FC = () => {
     }
   };
 
-  const getOtherParty = (conversation: any) => {
+  const getOtherPartyEmail = (conversation: any) => {
     if (user?.role === 'STUDENT') {
       return conversation.manager?.user?.email || 'Manager';
     }
     return conversation.student?.user?.email || 'Student';
   };
 
+  const getInitial = (conversation: any) => {
+    const email = getOtherPartyEmail(conversation);
+    return email?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const isOwnMessage = (msg: any) => msg.sender?.email === user?.email;
+
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">Loading conversations...</p>
+      </main>
+    );
   }
 
   return (
-    <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg shadow overflow-hidden">
-      {/* Conversations List */}
-      <div className="w-1/3 border-r">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold">Conversations</h2>
-        </div>
-        <div className="overflow-y-auto h-full">
-          {conversations.length === 0 ? (
-            <p className="p-4 text-gray-500">No conversations yet.</p>
-          ) : (
-            conversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => selectConversation(conv)}
-                className={`p-4 cursor-pointer hover:bg-gray-50 border-b ${
-                  selectedConversation?.id === conv.id ? 'bg-indigo-50' : ''
-                }`}
-              >
-                <p className="font-medium">{getOtherParty(conv)}</p>
-                {conv.messages?.[0] && (
-                  <p className="text-sm text-gray-500 truncate">{conv.messages[0].text}</p>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        {/* Header */}
+        <header className="mb-6">
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Messages
+          </div>
+          <h1 className="text-2xl font-light text-gray-900">
+            Chat with Managers
+          </h1>
+          <p className="text-sm text-gray-500 font-light mt-1">
+            View and reply to your conversations with hostel managers.
+          </p>
+        </header>
 
-      {/* Messages */}
-      <div className="flex-1 flex flex-col">
-        {selectedConversation ? (
-          <>
-            <div className="p-4 border-b">
-              <h3 className="font-semibold">{getOtherParty(selectedConversation)}</h3>
+        {/* Chat Layout */}
+        <div className="border border-gray-100 bg-white h-[480px] md:h-[540px] flex overflow-hidden">
+          {/* Conversations List */}
+          <aside className="w-64 border-r border-gray-100 flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-xs font-medium tracking-widest uppercase text-gray-400">
+                Conversations
+              </p>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender?.email === user?.email ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs px-4 py-2 rounded-lg ${
-                      msg.sender?.email === user?.email
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-800'
-                    }`}
-                  >
-                    <p>{msg.text}</p>
-                    <p className="text-xs mt-1 opacity-70">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
+            <div className="flex-1 overflow-y-auto">
+              {conversations.length === 0 ? (
+                <div className="h-full flex items-center justify-center px-4 text-xs text-gray-500 font-light">
+                  No conversations yet.
+                </div>
+              ) : (
+                conversations.map((conv) => {
+                  const isActive = selectedConversation?.id === conv.id;
+                  const latest = conv.messages?.[0];
+                  return (
+                    <button
+                      key={conv.id}
+                      type="button"
+                      onClick={() => selectConversation(conv)}
+                      className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                        isActive ? 'bg-gray-50' : 'bg-white'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-xs font-medium flex items-center justify-center flex-shrink-0">
+                        {getInitial(conv)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-light text-gray-900 truncate">
+                          {getOtherPartyEmail(conv)}
+                        </p>
+                        {latest && (
+                          <p className="text-[11px] text-gray-500 font-light truncate mt-0.5">
+                            {latest.text}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+
+          {/* Messages Panel */}
+          <section className="flex-1 flex flex-col">
+            {selectedConversation ? (
+              <>
+                {/* Conversation Header */}
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-xs font-medium flex items-center justify-center">
+                    {getInitial(selectedConversation)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-light text-gray-900">
+                      {getOtherPartyEmail(selectedConversation)}
+                    </p>
+                    <p className="text-[11px] text-gray-500 font-light">
+                      Manager conversation
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="p-4 border-t">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  className="flex-1 px-3 py-2 border rounded-md"
-                  placeholder="Type a message..."
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={sending || !newMessage.trim()}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  Send
-                </button>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/40">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-xs text-gray-400 font-light">
+                        No messages yet. Say hello to start the conversation.
+                      </p>
+                    </div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${
+                          isOwnMessage(msg)
+                            ? 'justify-end'
+                            : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-xs px-3 py-2 text-xs rounded-lg ${
+                            isOwnMessage(msg)
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white text-gray-900 border border-gray-100'
+                          }`}
+                        >
+                          <p className="font-light break-words">
+                            {msg.text}
+                          </p>
+                          <p
+                            className={`mt-1 text-[10px] ${
+                              isOwnMessage(msg)
+                                ? 'text-gray-300'
+                                : 'text-gray-400'
+                            }`}
+                          >
+                            {new Date(
+                              msg.createdAt
+                            ).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="px-4 py-3 border-t border-gray-100 bg-white">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      className="flex-1 px-3 py-2.5 bg-white border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-900 font-light"
+                      placeholder="Type a message..."
+                    />
+                    <button
+                      type="button"
+                      onClick={sendMessage}
+                      disabled={sending || !newMessage.trim()}
+                      className="px-4 py-2.5 bg-gray-900 text-white text-xs font-light hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sending ? 'Sending...' : 'Send'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm text-gray-400 font-light">
+                  Select a conversation from the left to start chatting.
+                </p>
               </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            Select a conversation to start chatting
-          </div>
-        )}
+            )}
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
 

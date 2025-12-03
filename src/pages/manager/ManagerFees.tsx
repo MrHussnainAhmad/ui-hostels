@@ -7,6 +7,7 @@ const ManagerFees: React.FC = () => {
 
   useEffect(() => {
     loadFees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadFees = async () => {
@@ -20,55 +21,121 @@ const ManagerFees: React.FC = () => {
     }
   };
 
+  const formatMonth = (month: number, year?: number) => {
+    // If backend sends just numeric month, show as "Month X"; if year exists, format nicer
+    if (!year) return `Month ${month}`;
+    const date = new Date(year, month - 1);
+    return date.toLocaleDateString('en-PK', {
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatAmount = (amount: number) =>
+    `Rs. ${Number(amount || 0).toLocaleString()}`;
+
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'PENDING':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      default:
+        return 'bg-red-50 text-red-700 border-red-200';
+    }
+  };
+
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading fee history...
+        </p>
+      </main>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Fee Payment History</h1>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+        {/* Header */}
+        <header>
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Manager • Fees
+          </div>
+          <h1 className="text-2xl font-light text-gray-900 mb-1">
+            Fee Payment History
+          </h1>
+          <p className="text-sm text-gray-500 font-light">
+            View all platform fee payments made for your hostels.
+          </p>
+        </header>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {fees.length === 0 ? (
-          <p className="p-6 text-gray-500">No fee payments yet.</p>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hostel</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {fees.map((fee) => (
-                <tr key={fee.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">{fee.hostel?.hostelName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{fee.month}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{fee.studentCount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">Rs. {fee.feeAmount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        fee.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
-                          : fee.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {fee.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        {/* Table / Empty state */}
+        <section className="border border-gray-100 bg-white overflow-hidden">
+          {fees.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="text-sm text-gray-500 font-light">
+                No fee payments have been recorded yet.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Hostel
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Month
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Students
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {fees.map((fee) => (
+                    <tr key={fee.id}>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs text-gray-900 font-light">
+                        {fee.hostel?.hostelName || '-'}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs text-gray-700 font-light">
+                        {fee.month && fee.year
+                          ? formatMonth(fee.month, fee.year)
+                          : fee.month || '-'}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs text-gray-700 font-light">
+                        {fee.studentCount}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs text-gray-900 font-light">
+                        {formatAmount(fee.feeAmount)}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 text-[11px] font-light border rounded-full ${getStatusClasses(
+                            fee.status
+                          )}`}
+                        >
+                          {fee.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

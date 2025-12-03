@@ -10,6 +10,7 @@ const HostelReservations: React.FC = () => {
 
   useEffect(() => {
     loadReservations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId]);
 
   const loadReservations = async () => {
@@ -23,11 +24,15 @@ const HostelReservations: React.FC = () => {
     }
   };
 
-  const handleReview = async (id: string, status: 'ACCEPTED' | 'REJECTED', reason?: string) => {
+  const handleReview = async (
+    id: string,
+    status: 'ACCEPTED' | 'REJECTED',
+    reason?: string
+  ) => {
     setProcessing(id);
     try {
       await reservationsApi.review(id, { status, rejectReason: reason });
-      loadReservations();
+      await loadReservations();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to review');
     } finally {
@@ -35,108 +40,193 @@ const HostelReservations: React.FC = () => {
     }
   };
 
+  const formatDate = (date: string | Date) =>
+    new Date(date).toLocaleDateString('en-PK', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'ACCEPTED':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'REJECTED':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading reservations...
+        </p>
+      </main>
+    );
   }
 
-  const pendingReservations = reservations.filter((r) => r.status === 'PENDING');
-  const otherReservations = reservations.filter((r) => r.status !== 'PENDING');
+  const pendingReservations = reservations.filter(
+    (r) => r.status === 'PENDING'
+  );
+  const otherReservations = reservations.filter(
+    (r) => r.status !== 'PENDING'
+  );
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Hostel Reservations</h1>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+        {/* Header */}
+        <header>
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Manager • Reservations
+          </div>
+          <h1 className="text-2xl font-light text-gray-900 mb-1">
+            Hostel Reservations
+          </h1>
+          <p className="text-sm text-gray-500 font-light">
+            Review reservation requests and manage their status.
+          </p>
+        </header>
 
-      {/* Pending Reservations */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Pending Reservations ({pendingReservations.length})</h2>
-        {pendingReservations.length === 0 ? (
-          <p className="text-gray-500">No pending reservations.</p>
-        ) : (
-          <div className="space-y-4">
-            {pendingReservations.map((reservation) => (
-              <div key={reservation.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{reservation.student.user.email}</p>
-                    <p className="text-sm text-gray-600">Phone: {reservation.student.phoneNumber}</p>
-                    {reservation.message && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Message: {reservation.message}
+        {/* Pending Reservations */}
+        <section className="border border-gray-100 bg-white px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-light text-gray-900">
+              Pending Reservations
+            </h2>
+            <span className="text-xs text-gray-500 font-light">
+              {pendingReservations.length} pending
+            </span>
+          </div>
+
+          {pendingReservations.length === 0 ? (
+            <p className="text-sm text-gray-500 font-light">
+              No pending reservations.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {pendingReservations.map((reservation) => (
+                <article
+                  key={reservation.id}
+                  className="border border-gray-100 bg-gray-50 px-4 py-4 text-sm"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <p className="text-sm font-light text-gray-900 mb-1">
+                        {reservation.student.user.email}
                       </p>
-                    )}
-                    <p className="text-sm text-gray-500 mt-1">
-                      Submitted: {new Date(reservation.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleReview(reservation.id, 'ACCEPTED')}
-                      disabled={processing === reservation.id}
-                      className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => {
-                        const reason = prompt('Rejection reason (optional):');
-                        handleReview(reservation.id, 'REJECTED', reason || undefined);
-                      }}
-                      disabled={processing === reservation.id}
-                      className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Reservation History */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Reservation History</h2>
-        {otherReservations.length === 0 ? (
-          <p className="text-gray-500">No reservation history.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {otherReservations.map((reservation) => (
-                  <tr key={reservation.id}>
-                    <td className="px-4 py-3 whitespace-nowrap">{reservation.student.user.email}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          reservation.status === 'ACCEPTED'
-                            ? 'bg-green-100 text-green-800'
-                            : reservation.status === 'REJECTED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
+                      <p className="text-xs text-gray-600 font-light">
+                        Phone: {reservation.student.phoneNumber}
+                      </p>
+                      {reservation.message && (
+                        <p className="text-xs text-gray-600 font-light mt-2">
+                          Message: {reservation.message}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 font-light mt-1">
+                        Submitted: {formatDate(reservation.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleReview(reservation.id, 'ACCEPTED')
+                        }
+                        disabled={processing === reservation.id}
+                        className="px-4 py-2 bg-green-600 text-white text-xs font-light hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {reservation.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(reservation.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        {processing === reservation.id &&
+                        reservation.status === 'PENDING'
+                          ? 'Processing...'
+                          : 'Accept'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const reason = window.prompt(
+                            'Rejection reason (optional):'
+                          );
+                          handleReview(
+                            reservation.id,
+                            'REJECTED',
+                            reason || undefined
+                          );
+                        }}
+                        disabled={processing === reservation.id}
+                        className="px-4 py-2 bg-red-600 text-white text-xs font-light hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Reservation History */}
+        <section className="border border-gray-100 bg-white px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-light text-gray-900">
+              Reservation History
+            </h2>
+            <span className="text-xs text-gray-500 font-light">
+              {otherReservations.length} records
+            </span>
           </div>
-        )}
+
+          {otherReservations.length === 0 ? (
+            <p className="text-sm text-gray-500 font-light">
+              No reservation history.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Student
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {otherReservations.map((reservation) => (
+                    <tr key={reservation.id}>
+                      <td className="px-4 py-3 text-xs text-gray-900 font-light whitespace-nowrap">
+                        {reservation.student.user.email}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 text-[11px] font-light border ${getStatusClasses(
+                            reservation.status
+                          )}`}
+                        >
+                          {reservation.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 font-light whitespace-nowrap">
+                        {formatDate(reservation.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

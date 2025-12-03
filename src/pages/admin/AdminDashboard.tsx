@@ -13,6 +13,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadStats = async () => {
@@ -31,71 +32,123 @@ const AdminDashboard: React.FC = () => {
         totalUsers: users.data.data.length,
       });
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error loading admin stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading admin dashboard...
+        </p>
+      </main>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+    <main className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+        {/* Header */}
+        <header>
+          <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+            Admin Dashboard
+          </div>
+          <h1 className="text-2xl font-light text-gray-900 mb-1">
+            Platform Overview
+          </h1>
+          <p className="text-sm text-gray-500 font-light">
+            Monitor verifications, reports, fees and users across the platform.
+          </p>
+        </header>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Link to="/admin/verifications" className="bg-white rounded-lg shadow p-6 hover:shadow-md">
-          <h3 className="text-gray-500 text-sm">Pending Verifications</h3>
-          <p className="text-3xl font-bold text-yellow-600">{stats.pendingVerifications}</p>
-        </Link>
-        <Link to="/admin/reports" className="bg-white rounded-lg shadow p-6 hover:shadow-md">
-          <h3 className="text-gray-500 text-sm">Open Reports</h3>
-          <p className="text-3xl font-bold text-red-600">{stats.openReports}</p>
-        </Link>
-        <Link to="/admin/fees" className="bg-white rounded-lg shadow p-6 hover:shadow-md">
-          <h3 className="text-gray-500 text-sm">Pending Fees</h3>
-          <p className="text-3xl font-bold text-blue-600">{stats.pendingFees}</p>
-        </Link>
-        <Link to="/admin/users" className="bg-white rounded-lg shadow p-6 hover:shadow-md">
-          <h3 className="text-gray-500 text-sm">Total Users</h3>
-          <p className="text-3xl font-bold text-green-600">{stats.totalUsers}</p>
-        </Link>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Stats Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             to="/admin/verifications"
-            className="bg-indigo-100 text-indigo-800 p-4 rounded-md text-center hover:bg-indigo-200"
+            className="border border-gray-100 bg-white px-5 py-4 hover:border-gray-200 hover:shadow-sm transition-all"
           >
-            Review Verifications
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Pending Verifications
+            </p>
+            <p className="text-2xl font-light text-yellow-700">
+              {stats.pendingVerifications}
+            </p>
           </Link>
+
           <Link
             to="/admin/reports"
-            className="bg-red-100 text-red-800 p-4 rounded-md text-center hover:bg-red-200"
+            className="border border-gray-100 bg-white px-5 py-4 hover:border-gray-200 hover:shadow-sm transition-all"
           >
-            Handle Reports
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Open Reports
+            </p>
+            <p className="text-2xl font-light text-red-700">
+              {stats.openReports}
+            </p>
           </Link>
+
           <Link
             to="/admin/fees"
-            className="bg-blue-100 text-blue-800 p-4 rounded-md text-center hover:bg-blue-200"
+            className="border border-gray-100 bg-white px-5 py-4 hover:border-gray-200 hover:shadow-sm transition-all"
           >
-            Review Fees
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Pending Fees
+            </p>
+            <p className="text-2xl font-light text-blue-700">
+              {stats.pendingFees}
+            </p>
           </Link>
+
           <Link
             to="/admin/users"
-            className="bg-green-100 text-green-800 p-4 rounded-md text-center hover:bg-green-200"
+            className="border border-gray-100 bg-white px-5 py-4 hover:border-gray-200 hover:shadow-sm transition-all"
           >
-            Manage Users
+            <p className="text-xs text-gray-500 font-light mb-1">
+              Total Users
+            </p>
+            <p className="text-2xl font-light text-green-700">
+              {stats.totalUsers}
+            </p>
           </Link>
-        </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section className="border border-gray-100 bg-white px-6 py-6">
+          <h2 className="text-sm font-light text-gray-900 mb-4">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <Link
+              to="/admin/verifications"
+              className="px-4 py-4 text-center border border-yellow-200 bg-yellow-50 text-yellow-800 font-light hover:bg-yellow-100 transition-colors"
+            >
+              Review Verifications
+            </Link>
+            <Link
+              to="/admin/reports"
+              className="px-4 py-4 text-center border border-red-200 bg-red-50 text-red-800 font-light hover:bg-red-100 transition-colors"
+            >
+              Handle Reports
+            </Link>
+            <Link
+              to="/admin/fees"
+              className="px-4 py-4 text-center border border-blue-200 bg-blue-50 text-blue-800 font-light hover:bg-blue-100 transition-colors"
+            >
+              Review Fees
+            </Link>
+            <Link
+              to="/admin/users"
+              className="px-4 py-4 text-center border border-green-200 bg-green-50 text-green-800 font-light hover:bg-green-100 transition-colors"
+            >
+              Manage Users
+            </Link>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 

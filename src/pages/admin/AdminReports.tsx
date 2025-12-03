@@ -9,6 +9,7 @@ const AdminReports: React.FC = () => {
 
   useEffect(() => {
     loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const loadReports = async () => {
@@ -24,19 +25,27 @@ const AdminReports: React.FC = () => {
   };
 
   const handleResolve = async (id: string) => {
-    const decision = prompt('Decision (STUDENT_FAULT, MANAGER_FAULT, NONE):');
-    if (!decision || !['STUDENT_FAULT', 'MANAGER_FAULT', 'NONE'].includes(decision)) {
+    const decision = window.prompt(
+      'Decision (STUDENT_FAULT, MANAGER_FAULT, NONE):'
+    );
+    if (
+      !decision ||
+      !['STUDENT_FAULT', 'MANAGER_FAULT', 'NONE'].includes(decision)
+    ) {
       alert('Invalid decision');
       return;
     }
 
-    const resolution = prompt('Final resolution message:');
+    const resolution = window.prompt('Final resolution message:');
     if (!resolution) return;
 
     setProcessing(id);
     try {
-      await reportsApi.resolve(id, { decision, finalResolution: resolution });
-      loadReports();
+      await reportsApi.resolve(id, {
+        decision,
+        finalResolution: resolution,
+      });
+      await loadReports();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to resolve');
     } finally {
@@ -44,83 +53,150 @@ const AdminReports: React.FC = () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md"
-        >
-          <option value="">All</option>
-          <option value="OPEN">Open</option>
-          <option value="RESOLVED">Resolved</option>
-        </select>
-      </div>
+  const getStatusClasses = (status: string) =>
+    status === 'OPEN'
+      ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      : 'bg-green-50 text-green-700 border-green-200';
 
-      {loading ? (
-        <div className="text-center py-10">Loading...</div>
-      ) : reports.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-          No reports found.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {reports.map((report) => (
-            <div key={report.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">Report #{report.id.slice(-6)}</p>
-                  <p className="text-sm text-gray-600">
-                    Student: {report.student?.user?.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Manager: {report.manager?.user?.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Hostel: {report.booking?.hostel?.hostelName}
-                  </p>
-                  <div className="mt-2 p-3 bg-gray-50 rounded">
-                    <p className="text-sm font-medium">Description:</p>
-                    <p className="text-sm">{report.description}</p>
-                  </div>
-                  {report.finalResolution && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded">
-                      <p className="text-sm font-medium">Resolution:</p>
-                      <p className="text-sm">{report.finalResolution}</p>
-                      <p className="text-xs text-gray-500 mt-1">Decision: {report.decision}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      report.status === 'OPEN'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {report.status}
-                  </span>
-                  {report.status === 'OPEN' && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => handleResolve(report.id)}
-                        disabled={processing === report.id}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        Resolve
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-400 font-light">
+          Loading reports...
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="text-xs font-medium tracking-widest uppercase text-gray-400 mb-1">
+              Admin • Reports
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+            <h1 className="text-2xl font-light text-gray-900 mb-1">
+              Dispute Reports
+            </h1>
+            <p className="text-sm text-gray-500 font-light">
+              Review and resolve disputes between students and managers.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-light">
+              Filter by status
+            </span>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-gray-200 text-xs sm:text-sm text-gray-900 rounded-lg focus:outline-none focus:border-gray-900 font-light"
+            >
+              <option value="">All</option>
+              <option value="OPEN">Open</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+          </div>
+        </header>
+
+        {/* Content */}
+        {reports.length === 0 ? (
+          <section className="border border-gray-100 bg-white px-6 py-8 text-center">
+            <p className="text-sm text-gray-500 font-light">
+              No reports found for the selected filter.
+            </p>
+          </section>
+        ) : (
+          <section className="space-y-4">
+            {reports.map((report) => (
+              <article
+                key={report.id}
+                className="border border-gray-100 bg-white px-6 py-5 text-sm"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  {/* Left: details */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 font-light">
+                      Report #{report.id.slice(-6)}
+                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-900 font-light">
+                        Student:{' '}
+                        <span className="font-normal">
+                          {report.student?.user?.email || '-'}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-900 font-light">
+                        Manager:{' '}
+                        <span className="font-normal">
+                          {report.manager?.user?.email || '-'}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-900 font-light">
+                        Hostel:{' '}
+                        <span className="font-normal">
+                          {report.booking?.hostel?.hostelName || '-'}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="mt-2 border border-gray-100 bg-gray-50 px-3 py-3">
+                      <p className="text-xs font-medium text-gray-800 mb-1">
+                        Description
+                      </p>
+                      <p className="text-xs text-gray-700 font-light whitespace-pre-wrap">
+                        {report.description}
+                      </p>
+                    </div>
+
+                    {report.finalResolution && (
+                      <div className="mt-2 border border-blue-100 bg-blue-50 px-3 py-3">
+                        <p className="text-xs font-medium text-blue-900 mb-1">
+                          Resolution
+                        </p>
+                        <p className="text-xs text-blue-800 font-light whitespace-pre-wrap">
+                          {report.finalResolution}
+                        </p>
+                        <p className="text-[11px] text-gray-500 font-light mt-1">
+                          Decision: {report.decision}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: status & actions */}
+                  <div className="text-right space-y-3 flex-shrink-0">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 text-xs font-light border rounded-full ${getStatusClasses(
+                        report.status
+                      )}`}
+                    >
+                      {report.status}
+                    </span>
+
+                    {report.status === 'OPEN' && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleResolve(report.id)}
+                          disabled={processing === report.id}
+                          className="px-4 py-2 bg-gray-900 text-white text-xs font-light rounded hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processing === report.id
+                            ? 'Resolving...'
+                            : 'Resolve'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
+      </div>
+    </main>
   );
 };
 
