@@ -22,7 +22,7 @@ const Policy: React.FC = () => {
 
         <section className="space-y-4 text-sm text-gray-700 font-light">
           <p>
-            This Privacy & Safety Policy explains how <span className="font-normal">Hostels</span>{' '}
+            This Privacy & Safety Policy explains how <span className="font-normal">HOSTELSHUB</span>{' '}
             works, what we are responsible for, and what you agree to when you use our platform
             as a student or manager.
           </p>
@@ -31,7 +31,7 @@ const Policy: React.FC = () => {
             1. We are a platform, not hostel owners
           </h2>
           <p>
-            Hostels is <span className="font-normal">not a hostel owner or property dealer</span>.
+            HOSTELSHUB is <span className="font-normal">not a hostel owner or property dealer</span>.
             We only provide an online platform where hostel managers post their hostels and
             students can browse, reserve and book those hostels.
           </p>
@@ -42,7 +42,7 @@ const Policy: React.FC = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li>
               All payments and agreements are strictly between{' '}
-              <span className="font-normal">student and manager</span>. Hostels does not hold
+              <span className="font-normal">student and manager</span>. HOSTELSHUB does not hold
               your money and is <span className="font-normal">not responsible</span> for any loss,
               scam or dispute.
             </li>
@@ -62,7 +62,7 @@ const Policy: React.FC = () => {
             3. Manager platform fee
           </h2>
           <p>
-            To keep Hostels running and improve the service,{' '}
+            To keep HOSTELSHUB running and improve the service,{' '}
             <span className="font-normal">managers</span> agree to pay:
           </p>
           <ul className="list-disc pl-5 space-y-1">
@@ -71,7 +71,7 @@ const Policy: React.FC = () => {
           </ul>
           <p>
             Students <span className="font-normal">do not</span> pay this platform fee directly
-            to Hostels. It is collected from managers only.
+            to HOSTELSHUB. It is collected from managers only.
           </p>
 
           <h2 className="text-base font-medium text-gray-900 mt-4">
@@ -152,7 +152,7 @@ const Policy: React.FC = () => {
           <p>
             We may update this Privacy & Safety Policy from time to time. Updates will be
             published at <span className="font-mono text-xs">/policy</span>. Continuing to use
-            Hostels means you accept the latest version.
+            HOSTELSHUB means you accept the latest version.
           </p>
 
           <p className="text-[11px] text-gray-400 font-light mt-4">

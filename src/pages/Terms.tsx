@@ -22,7 +22,7 @@ const Terms: React.FC = () => {
         <section className="space-y-4 text-sm text-gray-700 font-light">
           <p>
             These Terms of Use (&quot;Terms&quot;) govern your use of the
-            Hostels platform (&quot;Hostels&quot;, &quot;we&quot;, &quot;our&quot;,
+            HOSTELSHUB platform (&quot;HOSTELSHUB&quot;, &quot;we&quot;, &quot;our&quot;,
             &quot;us&quot;). By creating an account or using the website, you
             agree to these Terms.
           </p>
@@ -31,7 +31,7 @@ const Terms: React.FC = () => {
             1. Platform Only
           </h2>
           <p>
-            Hostels is <span className="font-normal">not a hostel owner</span>.
+            HOSTELSHUB is <span className="font-normal">not a hostel owner</span>.
             We only provide a platform where managers post hostels and students
             can browse, reserve and book. Any stay, payment or agreement is
             strictly between manager and student.
@@ -42,7 +42,7 @@ const Terms: React.FC = () => {
           </h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <span className="font-medium">Students</span> use Hostels to find
+              <span className="font-medium">Students</span> use HOSTELSHUB to find
               accommodation, send reservations, create bookings and chat with
               managers.
             </li>
@@ -66,11 +66,11 @@ const Terms: React.FC = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li>
               Payments are made directly between students and managers (e.g.
-              Easypaisa, JazzCash, bank transfer). Hostels does not hold or
+              Easypaisa, JazzCash, bank transfer). HOSTELSHUB does not hold or
               guarantee your funds.
             </li>
             <li>
-              Hostels is <span className="font-normal">not responsible</span>{' '}
+              HOSTELSHUB is <span className="font-normal">not responsible</span>{' '}
               for any scams, non‑payment, refund disputes or personal agreements
               between students and managers.
             </li>
@@ -92,7 +92,7 @@ const Terms: React.FC = () => {
             <li>Rs. 100 per active student per month.</li>
           </ul>
           <p>
-            This fee is paid by managers to keep the Hostels platform live.
+            This fee is paid by managers to keep the HOSTELSHUB platform live.
             Students do not pay this fee directly to Hostels.
           </p>
 
@@ -109,7 +109,7 @@ const Terms: React.FC = () => {
               instructions from relevant authorities.
             </li>
             <li>
-              Hostels may suspend or terminate accounts that break these Terms
+              HOSTELSHUB may suspend or terminate accounts that break these Terms
               or create risk for other users.
             </li>
           </ul>
@@ -119,7 +119,7 @@ const Terms: React.FC = () => {
           </h2>
           <p>
             In case of serious issues (such as scams, fraud or repeated abuse),
-            Hostels may, at its own discretion:
+            HOSTELSHUB may, at its own discretion:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Temporarily suspend or permanently terminate accounts.</li>
@@ -134,7 +134,7 @@ const Terms: React.FC = () => {
           </h2>
           <p>
             We may update these Terms at any time. Updated versions will be
-            available on this page. Your continued use of Hostels means you
+            available on this page. Your continued use of HOSTELSHUB means you
             accept the updated Terms.
           </p>
         </section>

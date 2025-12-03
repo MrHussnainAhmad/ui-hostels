@@ -7,7 +7,7 @@ const About: React.FC = () => {
       <div className="max-w-3xl mx-auto px-6 py-10 space-y-6">
         <header>
           <h1 className="text-2xl sm:text-3xl font-light text-gray-900 mb-2">
-            About Hostels
+            About HOSTELSHUB
           </h1>
           <p className="text-sm text-gray-500 font-light">
             Helping students in Bahawalpur find verified hostel accommodation.
@@ -16,7 +16,7 @@ const About: React.FC = () => {
 
         <section className="space-y-4 text-sm text-gray-700 font-light">
           <p>
-            <span className="font-normal">Hostels</span> is a platform built to
+            <span className="font-normal">HOSTELSHUB</span> is a platform built to
             connect students with hostel managers in Bahawalpur, Pakistan. We
             help students discover available hostels, compare room types and
             prices, and communicate directly with managers through a simple and
