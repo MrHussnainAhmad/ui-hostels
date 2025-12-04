@@ -514,6 +514,10 @@ const HostelDetail: React.FC = () => {
       alert('Please select a room type');
       return;
     }
+    if (!id) {
+      alert('Hostel ID not found');
+      return;
+    }
     setReserving(true);
     try {
       await reservationsApi.create({

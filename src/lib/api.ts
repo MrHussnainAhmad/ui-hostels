@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    console.log('🚀 Request:', config.method?.toUpperCase(), config.baseURL + config.url);
+    console.log('🚀 Request:', config.method?.toUpperCase(), (config.baseURL ?? '') + (config.url ?? ''));
     try {
       const token = localStorage.getItem('token');
       if (token) {
