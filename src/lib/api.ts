@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://backend-1-yltb.onrender.com/api';
+const API_BASE_URL = import.meta.env.PROD
+  ? 'https://backend-1-yltb.onrender.com/api'
+  : '/api';
 
 console.log('🌐 API Base URL:', API_BASE_URL);
 
