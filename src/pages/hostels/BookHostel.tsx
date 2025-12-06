@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { hostelsApi, bookingsApi, createFormData } from '../../lib/api';
 import ImageUpload from '../../components/ImageUpload';
 
 const BookHostel: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [hostel, setHostel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [transactionImageFiles, setTransactionImageFiles] = useState<File[]>([]);
-  const navigate = useNavigate();
-
+  
   const [formData, setFormData] = useState({
     roomType: '',
     transactionDate: '',
@@ -19,6 +21,8 @@ const BookHostel: React.FC = () => {
     fromAccount: '',
     toAccount: '',
   });
+
+  const reservationId = new URLSearchParams(location.search).get('reservationId');
 
   useEffect(() => {
     loadHostel();
@@ -73,8 +77,13 @@ const BookHostel: React.FC = () => {
     setSubmitting(true);
 
     try {
+      const data: any = { hostelId: id, ...formData };
+      if (reservationId) {
+        data.reservationId = reservationId;
+      }
+
       const formDataToSend = createFormData(
-        { hostelId: id, ...formData },
+        data,
         [{ fieldName: 'transactionImage', files: transactionImageFiles }]
       );
 

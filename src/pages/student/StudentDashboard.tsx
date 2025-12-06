@@ -454,7 +454,7 @@ const StudentDashboard: React.FC = () => {
                         </div>
                       </div>
                       <Link
-                        to={`/hostels/${reservation.hostelId}/book`}
+                        to={`/hostels/${reservation.hostelId}/book?reservationId=${reservation.id}`}
                         className="inline-flex items-center gap-1 px-4 py-2 bg-gray-900 text-white text-xs font-light hover:bg-gray-800 transition-colors"
                       >
                         Book Now
