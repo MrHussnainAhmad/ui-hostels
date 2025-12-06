@@ -16,6 +16,7 @@ const BookHostel: React.FC = () => {
   
   const [formData, setFormData] = useState({
     roomType: '',
+    bookingType: 'REGULAR', // NEW: Default to REGULAR
     transactionDate: '',
     transactionTime: '',
     fromAccount: '',
@@ -23,6 +24,12 @@ const BookHostel: React.FC = () => {
   });
 
   const reservationId = new URLSearchParams(location.search).get('reservationId');
+  const roomTypeFromParams = new URLSearchParams(location.search).get('roomType');
+
+  // NEW: Check if today is after 12th
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const isAfter12th = dayOfMonth > 12;
 
   useEffect(() => {
     loadHostel();
@@ -33,10 +40,21 @@ const BookHostel: React.FC = () => {
       const response = await hostelsApi.getById(id!);
       const data = response.data.data;
       setHostel(data);
-      if (data?.roomTypes?.length > 0) {
-        setFormData((prev) => ({
+      
+      // Set room type from params or default
+      const roomType = roomTypeFromParams || (data?.roomTypes?.length > 0 ? data.roomTypes[0].type : '');
+      
+      // NEW: If after 12th, force URGENT booking type
+      if (isAfter12th) {
+        setFormData(prev => ({
           ...prev,
-          roomType: data.roomTypes[0].type,
+          roomType,
+          bookingType: 'URGENT'
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          roomType
         }));
       }
     } catch (error) {
@@ -57,7 +75,15 @@ const BookHostel: React.FC = () => {
     const selectedRoomType = hostel.roomTypes.find(
       (rt: any) => rt.type === formData.roomType
     );
-    return selectedRoomType ? selectedRoomType.price : 0;
+    
+    if (!selectedRoomType) return 0;
+    
+    // NEW: Return urgent price if booking type is URGENT and urgent price exists
+    if (formData.bookingType === 'URGENT' && selectedRoomType.urgentBookingPrice) {
+      return selectedRoomType.urgentBookingPrice;
+    }
+    
+    return selectedRoomType.price;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +100,23 @@ const BookHostel: React.FC = () => {
       return;
     }
 
+    // NEW: Validate that after 12th, only URGENT booking is allowed
+    if (isAfter12th && formData.bookingType !== 'URGENT') {
+      setError('After 12th of the month, only urgent bookings are allowed. Please select URGENT booking type.');
+      return;
+    }
+
+    // NEW: Validate that urgent booking has urgent price set
+    if (formData.bookingType === 'URGENT') {
+      const selectedRoomType = hostel.roomTypes.find(
+        (rt: any) => rt.type === formData.roomType
+      );
+      if (!selectedRoomType?.urgentBookingPrice) {
+        setError('Urgent booking price is not set for this room type. Please contact the manager or select a different room type.');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -88,8 +131,14 @@ const BookHostel: React.FC = () => {
       );
 
       await bookingsApi.create(formDataToSend);
-      // You can replace alert with a toast if you have one globally
-      alert('Booking submitted successfully! Wait for manager approval.');
+      
+      // Show different message for urgent booking
+      if (formData.bookingType === 'URGENT') {
+        alert('Urgent booking submitted successfully! You must leave on 1st of next month. Wait for manager approval.');
+      } else {
+        alert('Booking submitted successfully! Wait for manager approval.');
+      }
+      
       navigate('/student');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Booking failed');
@@ -127,6 +176,11 @@ const BookHostel: React.FC = () => {
     );
   }
 
+  const selectedRoomType = hostel.roomTypes?.find(
+    (rt: any) => rt.type === formData.roomType
+  );
+  const urgentBookingPrice = selectedRoomType?.urgentBookingPrice;
+
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-6 py-10">
@@ -143,19 +197,65 @@ const BookHostel: React.FC = () => {
               {hostel.city} {hostel.address && `• ${hostel.address}`}
             </p>
           )}
+          
+          {/* NEW: Booking restriction notice */}
+          {isAfter12th && (
+            <div className="mt-3 p-3 border border-orange-200 bg-orange-50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <span className="text-orange-600 text-sm">⚠️</span>
+                <div>
+                  <p className="text-sm text-orange-800 font-medium mb-1">
+                    Booking Date Restriction Active
+                  </p>
+                  <p className="text-sm text-orange-700 font-light">
+                    Today is {dayOfMonth}{dayOfMonth === 1 ? 'st' : dayOfMonth === 2 ? 'nd' : dayOfMonth === 3 ? 'rd' : 'th'} of the month.
+                    Only <span className="font-medium">urgent bookings</span> are allowed after the 12th.
+                  </p>
+                  <p className="text-sm text-orange-600 font-light mt-1">
+                    Urgent bookings require leaving on 1st of next month and rebooking.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Card */}
         <div className="border border-gray-100 bg-white px-6 py-7 sm:px-8 sm:py-8">
           {/* Amount notice */}
           <div className="border border-yellow-200 bg-yellow-50 px-4 py-3 mb-5">
-            <p className="text-sm text-gray-900 font-light mb-1">
-              Amount to Pay:{' '}
-              <span className="font-normal">
-                Rs. {getPrice().toLocaleString()}
-              </span>
-            </p>
-            <p className="text-xs text-yellow-800 font-light">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm text-gray-900 font-light">
+                Amount to Pay:
+              </p>
+              <div className="text-right">
+                <span className="text-lg font-normal text-gray-900">
+                  Rs. {getPrice().toLocaleString()}
+                </span>
+                {formData.bookingType === 'URGENT' && (
+                  <p className="text-xs text-orange-600 font-light">
+                    (Urgent Booking Price)
+                  </p>
+                )}
+                {formData.bookingType === 'REGULAR' && (
+                  <p className="text-xs text-gray-500 font-light">
+                    (Regular Price)
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* NEW: Show comparison if urgent price exists */}
+            {urgentBookingPrice && formData.bookingType === 'REGULAR' && (
+              <div className="mt-2 pt-2 border-t border-yellow-300">
+                <p className="text-xs text-gray-600 font-light">
+                  Regular: Rs. {selectedRoomType?.price?.toLocaleString()} • 
+                  Urgent: Rs. {urgentBookingPrice.toLocaleString()}
+                </p>
+              </div>
+            )}
+            
+            <p className="text-xs text-yellow-800 font-light mt-2">
               Please transfer the amount to the manager&apos;s account and then
               provide the transaction details below.
             </p>
@@ -189,10 +289,73 @@ const BookHostel: React.FC = () => {
                 {hostel.roomTypes &&
                   hostel.roomTypes.map((rt: any) => (
                     <option key={rt.type} value={rt.type}>
-                      {rt.type} • Rs. {rt.price}
+                      {rt.type} • 
+                      Regular: Rs. {rt.price} • 
+                      {rt.urgentBookingPrice ? `Urgent: Rs. ${rt.urgentBookingPrice}` : 'No urgent price'}
                     </option>
                   ))}
               </select>
+            </div>
+
+            {/* NEW: Booking Type */}
+            <div>
+              <label className="block text-xs font-medium tracking-widest uppercase text-gray-400 mb-2">
+                Booking Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                  formData.bookingType === 'REGULAR' 
+                    ? 'border-gray-900 bg-gray-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                } ${isAfter12th ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <input
+                    type="radio"
+                    name="bookingType"
+                    value="REGULAR"
+                    checked={formData.bookingType === 'REGULAR'}
+                    onChange={handleChange}
+                    disabled={isAfter12th}
+                    className="sr-only"
+                  />
+                  <div className="text-center">
+                    <div className="text-sm font-light text-gray-900 mb-1">Regular</div>
+                    <div className="text-xs text-gray-500">
+                      Available 1st-12th
+                    </div>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                  formData.bookingType === 'URGENT' 
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="bookingType"
+                    value="URGENT"
+                    checked={formData.bookingType === 'URGENT'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className="text-center">
+                    <div className="text-sm font-light text-gray-900 mb-1">Urgent</div>
+                    <div className="text-xs text-gray-500">
+                      Must leave 1st next month
+                    </div>
+                  </div>
+                </label>
+              </div>
+              
+              {/* NEW: Urgent booking notice */}
+              {formData.bookingType === 'URGENT' && (
+                <div className="mt-2 p-2 border border-orange-200 bg-orange-50 rounded">
+                  <p className="text-xs text-orange-700 font-light">
+                    <span className="font-medium">Important:</span> Urgent booking requires leaving on 1st of next month.
+                    You will need to rebook for the following month.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Image upload */}
@@ -296,7 +459,12 @@ const BookHostel: React.FC = () => {
                 disabled={submitting}
                 className="w-full sm:w-1/2 bg-gray-900 text-white py-2.5 text-sm font-light hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Submitting...' : 'Submit Booking'}
+                {submitting 
+                  ? 'Submitting...' 
+                  : formData.bookingType === 'URGENT' 
+                    ? 'Submit Urgent Booking' 
+                    : 'Submit Booking'
+                }
               </button>
             </div>
           </form>

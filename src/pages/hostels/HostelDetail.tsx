@@ -12,6 +12,7 @@ interface RoomTypeConfig {
   personsInRoom: number;
   price: number;
   fullRoomPriceDiscounted?: number | null;
+  urgentBookingPrice?: number | null;
 }
 
 const ROOM_TYPE_LABELS: Record<string, string> = {
@@ -169,6 +170,23 @@ const GridIcon = () => (
   </svg>
 );
 
+const AlertIcon = () => (
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+// ==================== HELPER FUNCTION ====================
+const getOrdinalSuffix = (day: number): string => {
+  if (day > 3 && day < 21) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+};
+
 // ==================== IMAGE GALLERY ====================
 const ImageGallery: React.FC<{ images: string[]; hostelName: string }> = ({
   images,
@@ -316,7 +334,8 @@ const RoomTypeCard: React.FC<{
   roomType: RoomTypeConfig;
   isSelected: boolean;
   onSelect: () => void;
-}> = ({ roomType, isSelected, onSelect }) => {
+  isAfter12th: boolean;
+}> = ({ roomType, isSelected, onSelect, isAfter12th }) => {
   const priceLabel = roomType.type === 'PRIVATE' ? '/room' : '/person';
 
   return (
@@ -361,6 +380,35 @@ const RoomTypeCard: React.FC<{
           {priceLabel}/month
         </span>
       </div>
+
+      {/* Urgent Booking Price */}
+      {roomType.urgentBookingPrice && (
+        <div className="mt-1">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-light text-orange-600">
+              Rs. {roomType.urgentBookingPrice.toLocaleString()}
+            </span>
+            <span className="text-xs text-orange-500">
+              urgent {priceLabel}
+            </span>
+          </div>
+          <p className="text-[11px] text-orange-500 font-light mt-0.5">
+            Must leave on 1st of next month
+          </p>
+        </div>
+      )}
+
+      {/* Booking Restriction Notice */}
+      {isAfter12th && !roomType.urgentBookingPrice && (
+        <div className="mt-1">
+          <p className="text-[11px] text-red-500 font-light">
+            After 12th: Only urgent booking available
+          </p>
+          <p className="text-[10px] text-gray-500 font-light">
+            Regular booking available 1st-12th only
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-4 text-xs text-gray-600 mt-1">
         <div className="flex items-center gap-1">
@@ -477,6 +525,11 @@ const HostelDetail: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
+  // Check if today is after 12th
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const isAfter12th = dayOfMonth > 12;
+
   useSEO({
     title: hostel ? `${hostel.hostelName} | HostelHub` : 'Hostel Details | HostelHub',
     description: hostel?.description || 'View hostel details on HostelHub.',
@@ -494,7 +547,17 @@ const HostelDetail: React.FC = () => {
       setHostel(data);
 
       const roomTypes = data.roomTypes as RoomTypeConfig[];
-      const availableType = roomTypes.find((rt) => rt.availableRooms > 0);
+      // If after 12th, prefer room types with urgent booking price
+      let availableType = null;
+      if (isAfter12th) {
+        availableType = roomTypes.find(rt => 
+          rt.availableRooms > 0 && rt.urgentBookingPrice
+        );
+      }
+      // Fallback to any available room type
+      if (!availableType) {
+        availableType = roomTypes.find((rt) => rt.availableRooms > 0);
+      }
       if (availableType) {
         setSelectedRoomType(availableType.type);
       }
@@ -655,6 +718,27 @@ const HostelDetail: React.FC = () => {
           hostelName={hostel.hostelName}
         />
 
+        {/* Booking Restriction Notice */}
+        {isAfter12th && (
+          <div className="mt-6 p-4 border border-orange-200 bg-orange-50 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertIcon />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-orange-800 mb-1">
+                  Booking Date Restriction
+                </h3>
+                <p className="text-sm text-orange-700 font-light">
+                  Today is {dayOfMonth}{getOrdinalSuffix(dayOfMonth)} of the month.
+                  Only <span className="font-medium">urgent bookings</span> are allowed after the 12th.
+                  Urgent bookings require leaving on the 1st of next month.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           {/* Left column */}
@@ -729,9 +813,16 @@ const HostelDetail: React.FC = () => {
 
             {/* Room types */}
             <section>
-              <h2 className="text-lg font-light text-gray-900 mb-3">
-                Available Room Types
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-light text-gray-900">
+                  Available Room Types
+                </h2>
+                {isAfter12th && (
+                  <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded">
+                    Urgent Booking Only
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {roomTypes.map((rt) => (
                   <RoomTypeCard
@@ -742,6 +833,7 @@ const HostelDetail: React.FC = () => {
                       rt.availableRooms > 0 &&
                       setSelectedRoomType(rt.type)
                     }
+                    isAfter12th={isAfter12th}
                   />
                 ))}
               </div>
@@ -865,7 +957,7 @@ const HostelDetail: React.FC = () => {
 
           {/* Right column: booking card */}
           <aside className="lg:col-span-1">
-            <div className="border border-gray-100 bg-white rounded-2xl p-6">
+            <div className="border border-gray-100 bg-white rounded-2xl p-6 sticky top-6">
               {selectedRoom ? (
                 <div className="mb-5">
                   <p className="text-xs text-gray-500 font-light mb-1">
@@ -883,7 +975,32 @@ const HostelDetail: React.FC = () => {
                       /month
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 font-light mt-1">
+                  
+                  {/* Show urgent booking price if available */}
+                  {selectedRoom.urgentBookingPrice && (
+                    <div className="mt-2">
+                      <p className="text-xs text-orange-600 font-light mb-0.5">
+                        Urgent Booking:
+                      </p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-light text-orange-600">
+                          Rs. {selectedRoom.urgentBookingPrice.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-orange-500">
+                          {selectedRoom.type === 'PRIVATE'
+                            ? '/room'
+                            : '/person'}
+                        </span>
+                      </div>
+                      {isAfter12th && (
+                        <p className="text-[11px] text-orange-500 font-light mt-0.5">
+                          Required after 12th
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500 font-light mt-2">
                     {selectedRoom.availableRooms} of{' '}
                     {selectedRoom.totalRooms} rooms available
                   </p>
@@ -904,8 +1021,19 @@ const HostelDetail: React.FC = () => {
                     disabled={!selectedRoomType}
                     className="w-full py-2.5 bg-gray-900 text-white text-sm font-light rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Book Now
+                    {isAfter12th ? 'Book Urgent' : 'Book Now'}
                   </button>
+                  
+                  {/* Notice for urgent booking requirement */}
+                  {isAfter12th && (
+                    <div className="p-3 border border-orange-200 bg-orange-50 rounded-lg">
+                      <p className="text-xs text-orange-700 font-light">
+                        <span className="font-medium">Note:</span> After 12th, only urgent bookings are allowed.
+                        You must leave on 1st of next month and rebook.
+                      </p>
+                    </div>
+                  )}
+                  
                   <button
                     type="button"
                     onClick={() => setShowReserveModal(true)}

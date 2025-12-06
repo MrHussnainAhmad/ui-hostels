@@ -12,6 +12,7 @@ interface RoomTypeConfig {
   personsInRoom: number;
   price: number;
   fullRoomPriceDiscounted?: number | null;
+  urgentBookingPrice?: number | null; // NEW
 }
 
 const ROOM_TYPE_LABELS: Record<RoomType, string> = {
@@ -59,6 +60,7 @@ const CreateHostel: React.FC = () => {
     { type: 'SHARED', totalRooms: 1, personsInRoom: 2, price: 0 },
   ]);
 
+  // FIXED: Add handleChange function
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -75,6 +77,7 @@ const CreateHostel: React.FC = () => {
     }
   };
 
+  // FIXED: Add handleFacilityChange function
   const handleFacilityChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -95,6 +98,7 @@ const CreateHostel: React.FC = () => {
     }
   };
 
+  // FIXED: Add handleArrayChange function
   const handleArrayChange = (
     field: string,
     index: number,
@@ -115,6 +119,7 @@ const CreateHostel: React.FC = () => {
     }
   };
 
+  // FIXED: Add addArrayItem function
   const addArrayItem = (field: string, isFacility = false) => {
     if (isFacility) {
       setFormData({
@@ -223,6 +228,9 @@ const CreateHostel: React.FC = () => {
           price: Number(rt.price),
           fullRoomPriceDiscounted: rt.fullRoomPriceDiscounted
             ? Number(rt.fullRoomPriceDiscounted)
+            : null,
+          urgentBookingPrice: rt.urgentBookingPrice // NEW
+            ? Number(rt.urgentBookingPrice)
             : null,
         })),
         facilities: {
@@ -474,6 +482,34 @@ const CreateHostel: React.FC = () => {
                           className="w-full px-3 py-2 bg-white border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-gray-900 font-light"
                           required
                         />
+                      </div>
+
+                      {/* NEW: Urgent Booking Price Field */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs text-gray-500 mb-1 font-light">
+                          Urgent Booking Price (Rs., optional)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={roomType.urgentBookingPrice || ''}
+                            onChange={(e) =>
+                              handleRoomTypeChange(
+                                index,
+                                'urgentBookingPrice',
+                                e.target.value || null
+                              )
+                            }
+                            className="w-full px-3 py-2 bg-white border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-gray-900 font-light"
+                            placeholder="Set urgent booking price"
+                          />
+                          <div className="text-[11px] text-gray-500 font-light whitespace-nowrap">
+                            For bookings after 12th
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-gray-500 font-light mt-1">
+                          Students must leave on 1st of next month. Urgent bookings are excluded from admin fees.
+                        </p>
                       </div>
 
                       {roomType.type === 'SHARED_FULLROOM' && (

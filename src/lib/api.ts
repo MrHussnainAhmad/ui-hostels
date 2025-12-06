@@ -91,6 +91,7 @@ export const usersApi = {
   updateManagerProfile: (data: any) => api.patch('/users/manager/profile', data),
   getAllUsers: (role?: string) => api.get('/users', { params: { role } }),
   terminateUser: (id: string) => api.post(`/users/${id}/terminate`),
+  deleteMyAccount: () => api.delete('/users/delete'),
 };
 
 export const verificationsApi = {
@@ -119,7 +120,7 @@ export const hostelsApi = {
   getById: (id: string) => api.get(`/hostels/${id}`),
   getStudents: (id: string) => api.get(`/hostels/${id}/students`),
   getAll: () => api.get('/hostels/admin/all'),
-  getRandomReviews: (limit: number = 4) => api.get('/hostels/reviews/random', { params: { limit } }), // NEW
+  getRandomReviews: (limit: number = 4) => api.get('/hostels/reviews/random', { params: { limit } }),
 };
 
 export const reservationsApi = {
@@ -137,12 +138,10 @@ export const bookingsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   getMy: () => api.get('/bookings/my'),
+  getManagerBookings: () => api.get('/bookings/manager'),
   getHostelBookings: (hostelId: string) => api.get(`/bookings/hostel/${hostelId}`),
   approve: (id: string) => api.post(`/bookings/${id}/approve`),
-  disapprove: (id: string, formData: FormData) =>
-    api.post(`/bookings/${id}/disapprove`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  disapprove: (id: string, data: any) => api.post(`/bookings/${id}/disapprove`, data),
   leave: (data: any) => api.post('/bookings/leave', data),
   kick: (id: string, data: any) => api.post(`/bookings/${id}/kick`, data),
   getAll: (status?: string) => api.get('/bookings', { params: { status } }),

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { feesApi, createFormData } from '../../lib/api';
+import { feesApi, createFormData, hostelsApi } from '../../lib/api'; // Added hostelsApi
 import ImageUpload from '../../components/ImageUpload';
 
 const SubmitFee: React.FC = () => {
@@ -10,6 +10,10 @@ const SubmitFee: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentProofFiles, setPaymentProofFiles] = useState<File[]>([]);
+  
+  // NEW: State for pending summary
+  const [pendingSummary, setPendingSummary] = useState<any>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
@@ -17,6 +21,27 @@ const SubmitFee: React.FC = () => {
     hostelId,
     month: currentMonth,
   });
+
+  // NEW: Load pending summary
+  useEffect(() => {
+    const loadPendingSummary = async () => {
+      if (!hostelId) return;
+      
+      setSummaryLoading(true);
+      try {
+        const response = await feesApi.getPendingSummary();
+        const summary = response.data.data;
+        const hostelSummary = summary.find((s: any) => s.hostelId === hostelId);
+        setPendingSummary(hostelSummary);
+      } catch (err) {
+        console.error('Error loading pending summary:', err);
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+    
+    loadPendingSummary();
+  }, [hostelId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -60,10 +85,43 @@ const SubmitFee: React.FC = () => {
             Submit Monthly Admin Fee
           </h1>
           <p className="text-sm text-gray-500 font-light">
-            Upload payment proof and select the month for this hostel&apos;s
-            platform fee.
+            Upload payment proof and select the month for this hostel&apos;s platform fee.
           </p>
         </div>
+
+        {/* NEW: Pending Summary Card */}
+        {pendingSummary && (
+          <div className="mb-6 border border-blue-200 bg-blue-50 px-4 py-4 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-800 mb-2">
+              Fee Calculation Summary
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-blue-700 font-light">Hostel:</span>
+                <span className="text-blue-900 font-medium">{pendingSummary.hostelName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-700 font-light">Month:</span>
+                <span className="text-blue-900 font-medium">{pendingSummary.month}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-700 font-light">Active Regular Students:</span>
+                <span className="text-blue-900 font-medium">{pendingSummary.activeStudents || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-700 font-light">Fee Amount:</span>
+                <span className="text-blue-900 font-medium">Rs. {pendingSummary.feeAmount?.toLocaleString() || 0}</span>
+              </div>
+              {/* NEW: Note about urgent bookings */}
+              <div className="mt-3 pt-3 border-t border-blue-300">
+                <p className="text-xs text-blue-600 font-light">
+                  <span className="font-medium">Note:</span> Only regular bookings are counted for admin fees. 
+                  Urgent bookings are excluded from fee calculation.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Card */}
         <div className="border border-gray-100 bg-white px-6 py-7 sm:px-8 sm:py-8">
@@ -117,13 +175,15 @@ const SubmitFee: React.FC = () => {
               />
             </div>
 
-            {/* Info Notice */}
+            {/* Info Notice - UPDATED */}
             <div className="border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 font-light">
-              Fee is calculated as{' '}
-              <span className="font-normal">
-                Rs. 100 per active student per month
-              </span>
-              . Make sure you&apos;ve paid the correct amount before submitting.
+              <p className="font-medium mb-1">Fee Calculation Rules:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Fee is Rs. 100 per <span className="font-medium">regular</span> student per month</li>
+                <li><span className="font-medium">Urgent bookings are excluded</span> from fee calculation</li>
+                <li>Student leaving doesn&apos;t reduce fee for that month</li>
+                <li>Make sure you&apos;ve paid the correct amount before submitting</li>
+              </ul>
             </div>
 
             {/* Actions */}

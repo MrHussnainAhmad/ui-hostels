@@ -44,6 +44,9 @@ import AdminUsers from './pages/admin/AdminUsers';
 // Chat Page
 import Chat from './pages/chat/Chat';
 
+// Shared Page
+import ProfilePage from './pages/Profile'
+
 const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
 
@@ -214,6 +217,8 @@ const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/profile" element={<ProfilePage />} />
+
         <Route
           path="/manager/reports"
           element={
