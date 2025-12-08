@@ -34,6 +34,7 @@ const SubmitFee: React.FC = () => {
       } catch (err) {
         console.error('Error loading pending summary:', err);
       } finally {
+      }
     };
     
     loadPendingSummary();
