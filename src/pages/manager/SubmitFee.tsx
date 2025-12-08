@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { feesApi, createFormData, hostelsApi } from '../../lib/api'; // Added hostelsApi
+import { feesApi, createFormData } from '../../lib/api'; // Added hostelsApi
 import ImageUpload from '../../components/ImageUpload';
 
 const SubmitFee: React.FC = () => {
@@ -13,7 +13,6 @@ const SubmitFee: React.FC = () => {
   
   // NEW: State for pending summary
   const [pendingSummary, setPendingSummary] = useState<any>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
@@ -27,7 +26,6 @@ const SubmitFee: React.FC = () => {
     const loadPendingSummary = async () => {
       if (!hostelId) return;
       
-      setSummaryLoading(true);
       try {
         const response = await feesApi.getPendingSummary();
         const summary = response.data.data;
@@ -36,8 +34,6 @@ const SubmitFee: React.FC = () => {
       } catch (err) {
         console.error('Error loading pending summary:', err);
       } finally {
-        setSummaryLoading(false);
-      }
     };
     
     loadPendingSummary();
