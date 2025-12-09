@@ -12,6 +12,21 @@ interface RoomTypeConfig {
   fullRoomPriceDiscounted?: number | null;
 }
 
+interface FeeSummary {
+  hostelId: string;
+  hostelName: string;
+  month: string;
+  activeStudents: number;
+  paidStudentCount: number;
+  additionalStudents: number;
+  feeAmount: number;
+  additionalFeeAmount: number;
+  submitted: boolean;
+  status: string | null;
+  needsAdditionalPayment: boolean;
+  note: string;
+}
+
 const ROOM_TYPE_LABELS: Record<string, string> = {
   SHARED: 'Shared',
   PRIVATE: 'Private',
@@ -43,7 +58,7 @@ const ManagerDashboard: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [hostels, setHostels] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
-  const [feeSummary, setFeeSummary] = useState<any[]>([]);
+  const [feeSummary, setFeeSummary] = useState<FeeSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,6 +103,37 @@ const ManagerDashboard: React.FC = () => {
     });
 
     return { totalRooms, availableRooms };
+  };
+
+  const getStatusBadge = (fee: FeeSummary) => {
+    // If needs additional payment, show special badge
+    if (fee.needsAdditionalPayment) {
+      return (
+        <span className="inline-flex items-center px-3 py-1 text-xs font-light border rounded-full bg-orange-50 text-orange-700 border-orange-200">
+          Additional Payment Required
+        </span>
+      );
+    }
+
+    if (!fee.submitted) {
+      return null;
+    }
+
+    const statusColors: Record<string, string> = {
+      APPROVED: 'bg-green-50 text-green-700 border-green-200',
+      PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      REJECTED: 'bg-red-50 text-red-700 border-red-200',
+    };
+
+    return (
+      <span
+        className={`inline-flex items-center px-3 py-1 text-xs font-light border rounded-full ${
+          statusColors[fee.status || ''] || 'bg-gray-50 text-gray-700 border-gray-200'
+        }`}
+      >
+        {fee.status}
+      </span>
+    );
   };
 
   if (loading) {
@@ -232,37 +278,58 @@ const ManagerDashboard: React.FC = () => {
               {feeSummary.map((fee) => (
                 <div
                   key={fee.hostelId}
-                  className="flex items-center justify-between gap-4 border border-gray-100 bg-gray-50 px-4 py-3 text-sm"
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border px-4 py-3 text-sm ${
+                    fee.needsAdditionalPayment
+                      ? 'border-orange-200 bg-orange-50'
+                      : 'border-gray-100 bg-gray-50'
+                  }`}
                 >
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-light text-gray-900">
                       {fee.hostelName}
                     </p>
-                    <p className="text-xs text-gray-600 font-light">
-                      {fee.activeStudents} students × Rs. 100 = Rs.{' '}
-                      {fee.feeAmount}
-                    </p>
+                    
+                    {/* Show different info based on whether additional payment is needed */}
+                    {fee.needsAdditionalPayment ? (
+                      <div className="mt-1 space-y-0.5">
+                        <p className="text-xs text-orange-700 font-light">
+                          Already paid: {fee.paidStudentCount} students × Rs. 100 = Rs. {fee.paidStudentCount * 100}
+                        </p>
+                        <p className="text-xs text-orange-800 font-medium">
+                          New students: {fee.additionalStudents} × Rs. 100 = Rs. {fee.additionalFeeAmount}
+                        </p>
+                        <p className="text-xs text-orange-600 font-light mt-1">
+                          {fee.note}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600 font-light">
+                        {fee.activeStudents} students × Rs. 100 = Rs. {fee.feeAmount}
+                      </p>
+                    )}
                   </div>
-                  {fee.submitted ? (
-                    <span
-                      className={`inline-flex items-center px-3 py-1 text-xs font-light border rounded-full ${
-                        fee.status === 'APPROVED'
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : fee.status === 'PENDING'
-                          ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          : 'bg-red-50 text-red-700 border-red-200'
-                      }`}
-                    >
-                      {fee.status}
-                    </span>
-                  ) : (
-                    <Link
-                      to={`/manager/fees/submit?hostelId=${fee.hostelId}`}
-                      className="inline-flex items-center px-4 py-1.5 bg-gray-900 text-white text-xs font-light rounded hover:bg-gray-800 transition-colors"
-                    >
-                      Pay Fee
-                    </Link>
-                  )}
+
+                  <div className="flex items-center gap-2">
+                    {/* Show status badge */}
+                    {getStatusBadge(fee)}
+
+                    {/* Show appropriate action button */}
+                    {fee.needsAdditionalPayment ? (
+                      <Link
+                        to={`/manager/fees/submit?hostelId=${fee.hostelId}`}
+                        className="inline-flex items-center px-4 py-1.5 bg-orange-600 text-white text-xs font-light rounded hover:bg-orange-700 transition-colors"
+                      >
+                        Pay Additional Fee
+                      </Link>
+                    ) : !fee.submitted ? (
+                      <Link
+                        to={`/manager/fees/submit?hostelId=${fee.hostelId}`}
+                        className="inline-flex items-center px-4 py-1.5 bg-gray-900 text-white text-xs font-light rounded hover:bg-gray-800 transition-colors"
+                      >
+                        Pay Fee
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
