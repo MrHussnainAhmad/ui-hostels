@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
+let year = new Date().getFullYear()
+
 // ==================== ICONS ====================
 const MenuIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -478,7 +480,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="h-7 w-auto object-contain"
                 />
                 <span className="text-sm text-gray-500 font-light">
-                  © {new Date().getFullYear()} HostelHub. All rights reserved.
+                  © {year} HostelHub. All rights reserved.
                 </span>
               </div>
 
