@@ -194,7 +194,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const isAuthPage =
-    location.pathname === '/login' || location.pathname === '/register';
+    location.pathname === '/login' || 
+    location.pathname === '/register' || 
+    location.pathname === '/app';
 
   // Close menus on route change
   useEffect(() => {
@@ -261,6 +263,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="flex items-center gap-3">
                 {isAuthenticated ? (
                   <>
+                    {/* Desktop Mobile App Link */}
+                    {(user?.role === 'MANAGER' || user?.role === 'STUDENT') && (
+                      <div className="hidden md:block">
+                        <NavLink to="/app" icon={<img src="/vite.svg" alt="Mobile App" className="w-4 h-4" />}>
+                          MobileApp <span className="ml-1 px-2 py-0.5 text-xs font-semibold tracking-wide text-green-800 bg-green-100 rounded-full">New</span>
+                        </NavLink>
+                      </div>
+                    )}
+
                     {/* Desktop user dropdown */}
                     <div className="hidden md:block relative">
                       <button
@@ -411,6 +422,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 >
                   Browse Hostels
                 </NavLink>
+                {(user?.role === 'MANAGER' || user?.role === 'STUDENT') && (
+                  <NavLink
+                    to="/app"
+                    icon={<img src="/vite.svg" alt="Mobile App" className="w-4 h-4" />}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    MobileApp <span className="ml-1 px-2 py-0.5 text-xs font-semibold tracking-wide text-green-800 bg-green-100 rounded-full">New</span>
+                  </NavLink>
+                )}
                 <NavLink
                   to="/profile"
                   icon={<UserIcon />}

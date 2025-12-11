@@ -207,10 +207,25 @@ const ReviewsSkeleton = () => (
 
 // ==================== MAIN COMPONENT ====================
 const Home: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  const getDashboardRoute = () => {
+    if (!user) return '/';
+    switch (user.role) {
+      case 'ADMIN':
+      case 'SUBADMIN':
+        return '/admin';
+      case 'MANAGER':
+        return '/manager';
+      case 'STUDENT':
+        return '/student';
+      default:
+        return '/';
+    }
+  };
 
   // Fetch random reviews on mount
   useEffect(() => {
@@ -357,7 +372,7 @@ const Home: React.FC = () => {
               ) : (
                 <div className="mt-10">
                   <Link
-                    to="/dashboard"
+                    to={getDashboardRoute()}
                     className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gray-900 text-white text-sm font-light hover:bg-gray-800 transition-colors"
                   >
                     Go to Dashboard
@@ -375,6 +390,41 @@ const Home: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== MOBILE APP CTA SECTION ==================== */}
+      <section className="py-16 md:py-20 border-b border-gray-100 bg-blue-50"> {/* Subtle blue background */}
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12 border border-blue-100 bg-white p-8 md:p-12 rounded-lg shadow-lg"> {/* Added shadow for pop */}
+            <div className="text-center md:text-left max-w-xl">
+              <div className="text-xs font-medium tracking-widest uppercase text-blue-600 mb-3"> {/* Blue accent for text */}
+                Mobile App
+              </div>
+              <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-4">
+                HostelHub in Your Pocket
+              </h2>
+              <p className="text-gray-500 font-light text-lg mb-8">
+                Download our mobile app for a seamless booking experience. Get instant notifications,
+                manage your stay, and connect with the community on the go.
+              </p>
+              <Link
+                to="/app"
+                className="inline-flex items-center justify-center gap-3 px-8 py-3 bg-gray-900 text-white text-sm font-light hover:bg-gray-800 transition-colors w-full md:w-auto"
+              >
+                <img src="/vite.svg" alt="App Icon" className="w-5 h-5" />
+                <span>Get the Mobile App</span>
+                <ArrowRightIcon />
+              </Link>
+            </div>
+            
+            {/* Visual Icon/Graphic */}
+            <div className="hidden md:flex items-center justify-center w-full md:w-auto">
+               <div className="w-40 h-40 bg-white rounded-3xl flex items-center justify-center shadow-lg border border-gray-200"> {/* Enlarged and more prominent */}
+                  <img src="/vite.svg" alt="Mobile App" className="w-24 h-24 opacity-80" /> {/* Enlarged */}
+               </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
@@ -12,6 +12,7 @@ import Privacy from './pages/Privacy'; // your existing privacy/policy page
 import Terms from './pages/Terms';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import MobileApp from './pages/MobileApp';
 
 // Hostel Pages
 import HostelList from './pages/hostels/HostelList';
@@ -49,6 +50,15 @@ import ProfilePage from './pages/Profile'
 
 const App: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile && location.pathname !== '/app') {
+      navigate('/app');
+    }
+  }, [location, navigate]);
 
   const getDefaultRoute = () => {
     if (!isAuthenticated || !user) return '/';
@@ -68,6 +78,9 @@ const App: React.FC = () => {
   return (
     <Layout>
       <Routes>
+        {/* Mobile Route */}
+        <Route path="/app" element={<MobileApp />} />
+
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/privacy" element={<Privacy />} />
