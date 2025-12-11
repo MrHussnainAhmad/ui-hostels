@@ -1,10 +1,89 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSEO } from "../hooks/useSEO";
-import loginEn from "../../public/app/En.jpeg";
-import loginPe from "../../public/app/Pe.jpeg";
-import loginUr from "../../public/app/ur.jpeg";
+import loginEn from "/app/En.jpeg";
+import loginPe from "/app/Pe.jpeg";
+import loginUr from "/app/ur.jpeg";
+import StudentDash from "/app/StDash.jpeg";
+import StudentBooking from "/app/StBooking.jpeg";
+import StudentHostelDetail from "/app/StHostelDetail.jpeg";
+import ManagerDash from "/app/MnDash.jpeg";
+import ManagerHostels from "/app/MnHostels.jpeg";
+import ManagerCreateHostels from "/app/MnCreateHostel.jpeg";
+
+// ==================== REUSABLE PHONE GROUP COMPONENT ====================
+interface PhoneGroupProps {
+  images: [string, string, string]; // [Left, Right, Center]
+  id?: string;
+}
+
+const PhoneGroup: React.FC<PhoneGroupProps> = ({ images, id }) => {
+  return (
+    <div
+      id={id}
+      className="relative w-full max-w-4xl h-full flex justify-center items-center pt-10 md:pt-20 scale-[0.45] sm:scale-75 md:scale-100 transform-gpu transition-transform duration-300 flex-shrink-0 snap-center"
+    >
+      {/* Left Phone */}
+      <div
+        className="absolute w-[280px] h-[550px] bg-white rounded-[3rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:z-30 hover:scale-105"
+        style={{
+          transform: "translateX(-160px) translateZ(-50px) rotateY(15deg)",
+          zIndex: 10,
+        }}
+      >
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-xl z-20"></div>
+        <div className="w-full h-full bg-gray-100 rounded-[2.5rem] overflow-hidden flex flex-col relative">
+          <img
+            src={images[0]}
+            alt="App Screen Left"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      {/* Right Phone */}
+      <div
+        className="absolute w-[280px] h-[550px] bg-white rounded-[3rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:z-30 hover:scale-105"
+        style={{
+          transform: "translateX(160px) translateZ(-50px) rotateY(-15deg)",
+          zIndex: 10,
+        }}
+      >
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-xl z-20"></div>
+        <div className="w-full h-full bg-gray-100 rounded-[2.5rem] overflow-hidden flex flex-col relative">
+          <img
+            src={images[1]}
+            alt="App Screen Right"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      {/* Center Phone */}
+      <div
+        className="absolute w-[300px] h-[580px] bg-white rounded-[3.5rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:scale-105"
+        style={{
+          transform: "translateZ(50px)",
+          zIndex: 20,
+        }}
+      >
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-36 h-7 bg-gray-900 rounded-b-xl z-20"></div>
+        <div className="w-full h-full bg-gray-100 rounded-[3rem] overflow-hidden flex flex-col relative">
+          <img
+            src={images[2]}
+            alt="App Screen Center"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MobileApp: React.FC = () => {
+  const [rotation, setRotation] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
   useSEO({
     title: "Download HostelHub App - #1 Hostel Booking Platform in Pakistan",
     description:
@@ -63,17 +142,60 @@ const MobileApp: React.FC = () => {
     { label: "5-Star Reviews", value: "2k+" },
   ];
 
+  // Screen Sets
+  const screenSets = [
+    [loginPe, loginUr, loginEn], // Auth Flow
+    [StudentDash, StudentHostelDetail, StudentBooking], // Discovery
+    [ManagerDash, ManagerHostels, ManagerCreateHostels], // Management
+  ];
+
+  const nextSet = () => {
+    setRotation((prev) => prev - 120);
+  };
+
+  const prevSet = () => {
+    setRotation((prev) => prev + 120);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      nextSet();
+    } else if (isRightSwipe) {
+      prevSet();
+    }
+    
+    // Reset
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
+        .perspective-container {
+          perspective: 2000px;
         }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
+        .transform-style-3d {
+          transform-style: preserve-3d;
+        }
+        .backface-hidden {
+          backface-visibility: hidden;
         }
       `}</style>
+
       {/* Hero Section */}
       <div className="bg-gray-900 text-white pt-12 pb-24 px-6 relative overflow-hidden">
         {/* Background Pattern */}
@@ -99,7 +221,7 @@ const MobileApp: React.FC = () => {
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-3 bg-white text-gray-900 font-bold py-4 px-8 rounded-full shadow-lg hover:bg-gray-50 transition-all transform active:scale-95 w-full sm:w-auto"
           >
-            <img src="/button.png" alt="Vite Logo" className="w-6 h-6" />
+            <img src="/vite.svg" alt="Vite Logo" className="w-6 h-6" />
             <span>Download V1.0.0</span>
           </a>
           <p className="mt-4 text-xs text-gray-400">
@@ -109,65 +231,54 @@ const MobileApp: React.FC = () => {
       </div>
 
       {/* 3D Phone Mockup Section */}
-      <div
-        className="relative w-full h-[310px] md:h-[700px] mb-12 flex justify-center items-center overflow-hidden"
-        style={{ perspective: "2000px" }}
-      >
-        {/* Unified 3D View for All Screens (Scaled down on mobile) */}
-        <div className="relative w-full max-w-4xl h-full flex justify-center items-center pt-10 md:pt-20 scale-[0.45] sm:scale-75 md:scale-100 transform-gpu transition-transform duration-300 animate-float">
-          {/* Left Phone */}
-          <div
-            className="absolute w-[280px] h-[550px] bg-white rounded-[3rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:z-30 hover:scale-105"
-            style={{
-              transform: "translateX(-160px) translateZ(-50px) rotateY(15deg)",
-              zIndex: 10,
-            }}
+      <div className="relative w-full h-[400px] md:h-[700px] mb-12 flex justify-center items-center overflow-hidden">
+        
+        {/* Desktop View: Single Group */}
+        <div className="hidden md:flex w-full h-full justify-center items-center perspective-container">
+          <PhoneGroup images={screenSets[0] as [string, string, string]} />
+        </div>
+
+        {/* Mobile View: 3D Rotating Carousel */}
+        <div 
+          className="md:hidden w-full h-full flex justify-center items-center relative perspective-container"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          
+          {/* Controls */}
+          <button 
+            onClick={prevSet}
+            className="absolute left-4 z-30 p-3 bg-white/90 rounded-full shadow-lg text-gray-800 hover:bg-white transition-colors border border-gray-100"
           >
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-xl z-20"></div>
-            <div className="w-full h-full bg-gray-100 rounded-[2.5rem] overflow-hidden flex flex-col relative">
-              <img
-                src={loginPe}
-                alt="App Screenshot 1"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+
+          <button 
+            onClick={nextSet}
+            className="absolute right-4 z-30 p-3 bg-white/90 rounded-full shadow-lg text-gray-800 hover:bg-white transition-colors border border-gray-100"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+
+          {/* Carousel Container */}
+          <div 
+            className="relative w-[300px] h-full transform-style-3d transition-transform duration-700 ease-out"
+            style={{ transform: `rotateY(${rotation}deg)` }}
+          >
+             {screenSets.map((set, i) => (
+               <div 
+                 key={i}
+                 className="absolute inset-0 flex justify-center items-center"
+                 style={{ 
+                   transform: `rotateY(${i * 120}deg) translateZ(350px)`
+                 }}
+               >
+                  <PhoneGroup images={set as [string, string, string]} />
+               </div>
+             ))}
           </div>
 
-          {/* Right Phone */}
-          <div
-            className="absolute w-[280px] h-[550px] bg-white rounded-[3rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:z-30 hover:scale-105"
-            style={{
-              transform: "translateX(160px) translateZ(-50px) rotateY(-15deg)",
-              zIndex: 10,
-            }}
-          >
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-xl z-20"></div>
-            <div className="w-full h-full bg-gray-100 rounded-[2.5rem] overflow-hidden flex flex-col relative">
-              <img
-                src={loginUr}
-                alt="App Screenshot 2"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Center Phone */}
-          <div
-            className="absolute w-[300px] h-[580px] bg-white rounded-[3.5rem] border-8 border-gray-900 shadow-2xl transition-all duration-500 ease-out hover:scale-105"
-            style={{
-              transform: "translateZ(50px)",
-              zIndex: 20,
-            }}
-          >
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-36 h-7 bg-gray-900 rounded-b-xl z-20"></div>
-            <div className="w-full h-full bg-gray-100 rounded-[5.5rem] overflow-hidden flex flex-col relative">
-              <img
-                src={loginEn}
-                alt="App Screenshot 3"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
         </div>
       </div>
 
