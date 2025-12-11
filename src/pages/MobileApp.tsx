@@ -187,7 +187,7 @@ const MobileApp: React.FC = () => {
   const [rotation, setRotation] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
